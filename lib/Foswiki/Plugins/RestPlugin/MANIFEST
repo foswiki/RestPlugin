@@ -1,18 +1,18 @@
 # Release manifest for RestPlugin
-data/Foswiki/RestPlugin.txt 0644 Documentation
+data/System/RestPlugin.txt 0644 Documentation
 lib/Foswiki/Plugins/RestPlugin.pm 0644 Perl module
 
 #if dojo is installed, this will give you inline editing on formfields in view mode
 templates/formtables.dojo.tmpl
 templates/restpluginscript.tmpl
 
-pub/Foswiki/RestPlugin/wikiring-rest.png
-pub/Foswiki/RestPlugin/wikiringlogo20x20.png
-pub/Foswiki/RestPlugin/restplugin-viewform.png
-pub/Foswiki/RestPlugin/Edit-chalk-10g.png
-pub/Foswiki/RestPlugin/formfield_example.png  
-pub/Foswiki/RestPlugin/Image:Edit-chalk-10bo.png  
-pub/Foswiki/RestPlugin/Wiki-text-icon.png
+pub/System/RestPlugin/wikiring-rest.png
+pub/System/RestPlugin/wikiringlogo20x20.png
+pub/System/RestPlugin/restplugin-viewform.png
+pub/System/RestPlugin/Edit-chalk-10g.png
+pub/System/RestPlugin/formfield_example.png  
+pub/System/RestPlugin/Image:Edit-chalk-10bo.png  
+pub/System/RestPlugin/Wiki-text-icon.png
 
 #demo topic
 data/Sandbox/BugItem1.txt

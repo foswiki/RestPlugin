@@ -1,5 +1,5 @@
 
----++ This is the TWiki.TWikiForms definition for the structured form based data for the TWiki:Plugins.BugsContrib
+---++ This is the System.DataForms definition for the structured form based data for the Foswiki:Plugins.BugsContrib
 see WebTopicEditTemplate for the TopicTemplate
 
 | *Name*       | *Type* | *Size* | *Values* | *Tooltip message* | *Attributes* |
