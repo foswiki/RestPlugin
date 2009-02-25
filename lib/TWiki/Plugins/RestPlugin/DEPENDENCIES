@@ -1,0 +1,6 @@
+# Dependencies for RestPlugin
+# Example:
+# Time::ParseDate,>=2003.0211,cpan,Required.
+# TWiki::Plugins,>=1.15,perl,TWiki 4.1 release.
+TWiki::Contrib::DojoToolkitContrib,>=1.0,perl,DojoToolkit release 1.0
+

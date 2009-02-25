@@ -1,0 +1,13 @@
+%META:TOPICINFO{author="BaseUserMapping_333" date="1196240328" format="1.1" reprev="1.3" version="1.3"}%
+-- Main.TWikiAdminUser - 02 Nov 2007
+
+This Item's form comes from TWiki:Plugins.BugsContrib
+
+%META:FORM{name="BugItemTemplate"}%
+%META:FIELD{name="Summary" attributes="M" title="Summary" value="Test this bug very carefully - it looks sneaky"}%
+%META:FIELD{name="ReportedBy" attributes="M" title="ReportedBy" value="TWikiAdminUser"}%
+%META:FIELD{name="AppliesTo" attributes="M" title="AppliesTo" value="Main Product"}%
+%META:FIELD{name="Priority" attributes="M" title="[[Priority]]" value="Enhancement"}%
+%META:FIELD{name="CurrentState" attributes="M" title="CurrentState" value="New"}%
+%META:FIELD{name="WaitingFor" attributes="" title="WaitingFor" value=""}%
+%META:PREFERENCE{name="VIEW_TEMPLATE" title="VIEW_TEMPLATE" type="Set" value="ItemView"}%

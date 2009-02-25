@@ -1,0 +1,38 @@
+<script type="text/javascript">
+    function myHandler(idOfBox, value) {
+        var url = "%SCRIPTURL{rest}%/RestPlugin/RealRest/"+idOfBox;
+        console.debug("Edited value from "+url+" is now "+value);
+
+        dojo.xhrPost( {
+            // The following URL must match that used to test the server.
+            url: url, 
+            handleAs: "text",
+            timeout: 5000, // Time in milliseconds
+            content: {
+                id: idOfBox,
+                value: value
+            },
+
+            // The LOAD function will be called on a successful response.
+            load: function(response, ioArgs) { // 
+                dojo.byId(idOfBox).innerHTML = response; // 
+                return response; // 
+            },
+
+            // The ERROR function will be called in an error case.
+            error: function(response, ioArgs) { // 
+                console.error("HTTP status code: ", ioArgs.xhr.status); // 
+                return response; // 
+            }
+        });
+    }
+</script>
+<style>
+.RestPluginEditable {
+    background: #F6F9ED url(%PUBURL%/%TWIKIWEB%/RestPlugin/Edit-chalk-10g.png) no-repeat scroll 99% center;
+    padding: 3px;
+    font-size: +1;
+    padding-right: 23px;
+    border:1px solid lightgrey;
+}
+</style>

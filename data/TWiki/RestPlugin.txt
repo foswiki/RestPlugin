@@ -1,0 +1,76 @@
+<img src="%PUBURL%/%WEB%/%TOPIC%/wikiring-rest.png" style="float:right;padding:26px" />
+
+---+!! !RestPlugin
+
+<!--
+One line description, required for extensions repository catalog.
+   * Set SHORTDESCRIPTION = Full implementation of REST - starting with !FormFields
+-->
+%SHORTDESCRIPTION%
+
+%TOC%
+
+<img src="%PUBURL%/%WEB%/%TOPIC%/formfield_example.png" style="padding:6px" />
+
+---++ Usage
+This plugin begins the task of creating a real REST URI engine for TWiki. It uses a TWiki:Codev.TopicObjectModel addressing scheme based on the TWiki.IfStatements and TWiki.QuerySearch syntax, 
+and then enable both the retriving and setting / creation of topics and parts of topics.
+
+Initially, it will be implemented using [[http://dojotoolkit.org/book/dojo-book-0-9/part-2-dijit/advanced-editing-and-display/inlineeditbox][Dojotoolkit's Diji InlineEdit]] component, and apply just to formfields. 
+This should give us a strong basis to extend the work to all topic fragments.
+
+---++ Examples
+---+++ FORMFIELD 
+This allows you to change values in TWiki Forms without leaving the current topic - useful for reports and inline data-wiki applications. 
+This syntax will be simplified in future.
+
+This example alows you to view, and change the Summary Field in Sandbox.BugItem1 (from TWiki:Plugins.BugsContrib) - by just clicking on the text, changing it, and then hitting ENTER
+
+%FORMFIELD{
+    "Summary" 
+    topic="Sandbox.BugItem1" 
+    default="(not set)" 
+    alttext="Summary field not found"
+    format="<span id='Sandbox.BugItem1:FIELD.Summary' class='RestPluginEditable' title='click to edit !Sandbox.BugItem1 Summary' dojoType='dijit.InlineEditBox' onChange='myHandler(this.id,arguments[0])'>$value</span>"
+}%
+<verbatim>
+%FORMFIELD{
+    "Summary" 
+    topic="Sandbox.BugItem1" 
+    default="(not set)" 
+    alttext="Summary field not found"
+    format="<span id='Sandbox.BugItem1:FIELD.Summary' class="RestPluginEditable" dojoType='dijit.InlineEditBox' onChange='myHandler(this.id,arguments[0])'>$value</span>"
+}%
+</verbatim>
+
+---+++ Inline edit of forms in topic.
+If you have installed this plugin, enabled it, and set =SKIN=dojo,pattern= then you can also goto Sandbox.BugItem1, and edit each of the formfields directly.
+
+<img src="%PUBURL%/%WEB%/%TOPIC%/restplugin-viewform.png" style="padding:6px" />
+
+---++ Customisation
+To make customisation possible, the javascript, and the formtables rendering is defined using the =restpluginscript.tmpl= and =formtables.dojo.tmpl= templates. To create your own implementations, create a new TWiki 
+Contrib that contains your javascript (in pub) and templates to activate them. Then set your SKIN to include your templates.
+
+---++ Installation Instructions
+
+%$INSTALL_INSTRUCTIONS%
+
+---++ Plugin Info
+
+
+|  Plugin Author(s): | TWiki:Main.SvenDowideit - http://distributedINFORMATION.com a %PUBURL%/%WEB%/%TOPIC%/wikiringlogo20x20.png [[http://WikiRing.com][WikiRing]] founding partner  |
+|  Copyright: | &copy; SvenDowideit@distributedINFORMATION.com |
+|  Gear Icon | based on eXperience Crystal, by David Christian Berg |
+|  UniversalWikiEditButton | http://www.aboutus.org/UniversalWikiEditButton |
+|  License: | [[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]] |
+|  Plugin Version: | %$VERSION% |
+|  Change History: | <!-- versions below in reverse order -->&nbsp; |
+|  Dependencies: | %$DEPENDENCIES% |
+|  Plugin Home: | http://twiki.org/cgi-bin/view/Plugins/RestPlugin |
+|  Feedback: | http://twiki.org/cgi-bin/view/Plugins/RestPluginDev |
+|  Appraisal: | http://twiki.org/cgi-bin/view/Plugins/RestPluginAppraisal |
+
+__Related Topics:__ %SYSTEMWEB%.TWikiPlugins, %SYSTEMWEB%.DeveloperDocumentationCategory, %SYSTEMWEB%.AdminDocumentationCategory, %SYSTEMWEB%.TWikiPreferences
+
+<!-- Do _not_ attempt to edit this topic; it is auto-generated. Please add comments/questions/remarks to the feedback topic on twiki.org instead. -->
