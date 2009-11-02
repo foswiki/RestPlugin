@@ -22,7 +22,7 @@ This should give us a strong basis to extend the work to all topic fragments.
 
 ---++ Examples
 ---++ request for rendered informaion:
-[[%SCRIPTURL{rest}%/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary][/rest/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary]] will return the requested Topic Object information. the final part of the URL is the same syntax as %SYSTEMWEB%.IfStatements.
+[[%SCRIPTURL{rest}%/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary?content_type=text/json][/rest/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary?content_type=text/json]] will return the requested Topic Object information. the final part of the URL is the same syntax as %SYSTEMWEB%.IfStatements.
 
 This information can then be used in a javascript input element to change the values.
 
@@ -36,6 +36,12 @@ This information can then be used in a javascript input element to change the va
 }
 </verbatim>
 
+[[http://quad/trunk/bin/rest/RestPlugin/RealRest/Sandbox.BugItem1:text?content_type=text/text][/rest/RestPlugin/RealRest/Sandbox.BugItem1:text?content_type=text/text]] returns the topic text (in raw form..)
+
+---++++ request parameters
+   * =content_type= - can return =text/json=, =text/text=, =text/html=.. - thus over-riding the mime type requested by the browser
+      * if you request a 'set' object and use type =text/json= you will get a json object containing the entire meta object's data.
+      * eg [[http://quad/trunk/bin/rest/RestPlugin/RealRest/Sandbox.WebHome?content_type=text/json][/rest/RestPlugin/RealRest/Sandbox.WebHome?content_type=text/json]] returns __TO be implemented__
 ---++++ REST access details
    * all =GET= requests are non-modifying, and will return =json=, =html= or =text= as specified in the request
    * =POST= will modify the element (CSRF mechanisms not yet supported)

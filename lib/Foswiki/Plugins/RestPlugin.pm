@@ -115,71 +115,69 @@ print STDERR "fieldName = $fieldName" if $debug;
     my( $meta, $text ) = Foswiki::Func::readTopic( $web, $topic );
     
     my $result;
-    #TODO: need to add content_type & Accept code..
+    #TODO: need to add content_type
+    #Accept needs to order by preference expressed ...(its a float)
+    #want a urlparam to allow forcing the content_type
+    #TODO: make the content types pluggable
+    #eg, application/pdf would call getPdfPlugin
+    my @acceptedContentTypes = sort {$query->Accept($b) <=> $query->Accept($a)} $query->Accept();
+    
+#print STDERR "".join(',', @acceptedContentTypes)."\n";
+    #insert the requested content_type before the ones in the header (used mostly for debugging)
+    unshift (@acceptedContentTypes, $query->param('content_type')) if (defined($query->param('content_type')));
+#print STDERR "++".join(',', map {$_.'='.$query->Accept($_)} @acceptedContentTypes)."\n";
+    
     if ($request_method eq 'HEAD') {
     } elsif ($request_method eq 'GET') {
         $result = parseField($meta, $fieldName);
-
-            if (!defined($result)) {
-                print $query->header(
-                    -type   => 'text/html',
-                    -status => '404'
-                );
-                $result = "ERROR: (404) element ($web . $topic : $fieldName) does not exist)\n";
-                print STDERR "ERROR: (404) topic ($web . $topic : $fieldName) does not exist)\n";
-                exit;
-            }
-#        }        
-
-        #TODO: make the content types pluggable
-        if ($query->Accept('text/html')) {
-            #TODO: redirect to view? if topic
-            #TODO: render as table if HASH?
-
-            if (UNIVERSAL::isa($result, 'Foswiki::Meta')) {
-                #remove Foswiki object
-                undef $result->{_session};
-            }
-            $result = {
-                url => $query->path_info(),
-                web => $web,
-                topic => $topic,
-                field => $fieldName,
-                result => $result
-                };
-            use JSON;
-            $result = to_json($result, {pretty=>1});
-        } elsif ($query->Accept('text/json')) {
-            #remove Foswiki object
-            if (UNIVERSAL::isa($result, 'Foswiki::Meta')) {
-                #remove Foswiki object
-                undef $result->{_session};
-            }
-            #TODO: will need to escape the result..
-            $result = {
-                url => $query->path_info(),
-                web => $web,
-                topic => $topic,
-                field => $fieldName,
-                result => $result
-                };
-            use JSON;
-            $result = objToJson($result, {skipinvalid => 1, pretty=>1, convblessed=>1});
-
-#TODO; form for dojo
-#        { label: 'uid',
-#          identifier: 'name',
-#          items: $elements
-#        }
-
-        } elsif ($query->Accept('text/xml')) {
-        } elsif ($query->Accept('text/text')) {
-            #returns the $summary type text? (useful for search engines....)
-        } elsif ($query->Accept('text/tml')) {
-        	#source - or shoudl this be text/source...
-        } else {
-            $result = $pathInfo;
+        if (!defined($result)) {
+            print $query->header(
+                -type   => 'text/html',
+                -status => '404'
+            );
+            $result = "ERROR: (404) element ($web . $topic : $fieldName) does not exist)\n";
+            print STDERR "ERROR: (404) topic ($web . $topic : $fieldName) does not exist)\n";
+            exit;
         }
+        #TODO: replace foreach with hash of registrable subs..
+		foreach my $content_type (@acceptedContentTypes) {
+		    if (($content_type eq 'text/html')) {
+		        $result = Foswiki::Func::renderText( $result, $web, $topic )
+		    } elsif (($content_type eq 'text/json')) {
+		        #remove Foswiki object
+		        if (UNIVERSAL::isa($result, 'Foswiki::Meta')) {
+		            #remove Foswiki object
+		            undef $result->{_session};
+		        }
+		        #TODO: will need to escape the result..
+		        $result = {
+		            url => $query->path_info(),
+		            web => $web,
+		            topic => $topic,
+		            field => $fieldName,
+		            result => $result
+		            };
+		        use JSON;
+		        $result = to_json($result, {pretty=>1});
+
+	#TODO; form for dojo
+	#        { label: 'uid',
+	#          identifier: 'name',
+	#          items: $elements
+	#        }
+
+		        last; #found a match..
+		    } elsif (($content_type eq 'text/xml')) {
+		        #last; #found a match..
+		    } elsif (($content_type eq 'text/text')) {
+		        #returns the $summary type text? (useful for search engines....)
+		        last; #found a match..
+		    } elsif (($content_type eq 'text/tml')) {
+		    	#source - or shoudl this be text/source...
+		        last; #found a match..
+		    } else {
+		    }
+		}
     } elsif ($request_method eq 'POST') {
         my $value = $query->param('value');
         print STDERR "value = $value";
