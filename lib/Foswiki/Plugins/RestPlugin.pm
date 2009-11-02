@@ -20,7 +20,7 @@ use strict;
 
 require Foswiki::Func;    # The plugins API
 require Foswiki::Plugins; # For the API version
-require Foswiki::Contrib::DojoToolkitContrib;
+#require Foswiki::Contrib::DojoToolkitContrib;
 
 require JSON;
 
@@ -44,9 +44,9 @@ sub initPlugin {
     Foswiki::Func::registerRESTHandler('RealRest', \&RealRest);
     
     #TODO: use the skin path
-    Foswiki::Contrib::DojoToolkitContrib::requireJS("dojo.parser");
-    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.InlineEditBox");
-    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.form.TextBox");
+#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dojo.parser");
+#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.InlineEditBox");
+#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.form.TextBox");
     my $javascript = Foswiki::Func::readTemplate('restpluginscript');
     Foswiki::Func::addToHEAD($pluginName.'.InlineHandler', $javascript);
 
@@ -65,6 +65,8 @@ This is an example of a sub to be called by the =rest= script. The parameter is:
 Addressing scheme is...
 
 http://foswiki/cgi-bin/rest/RestPlugin/rest/Web.Topic:FormName.FieldName
+
+http://quad/trunk/bin/rest/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary
 
 eg:
         #if $pathInfo == '' %MAINWEB%.WebHome
@@ -146,7 +148,7 @@ print STDERR "fieldName = $fieldName" if $debug;
                 result => $result
                 };
             use JSON;
-            $result = objToJson($result, {skipinvalid => 1, pretty=>1, convblessed=>1});
+            $result = to_json($result, {pretty=>1});
         } elsif ($query->Accept('text/json')) {
             #remove Foswiki object
             if (UNIVERSAL::isa($result, 'Foswiki::Meta')) {
@@ -172,7 +174,9 @@ print STDERR "fieldName = $fieldName" if $debug;
 
         } elsif ($query->Accept('text/xml')) {
         } elsif ($query->Accept('text/text')) {
-            
+            #returns the $summary type text? (useful for search engines....)
+        } elsif ($query->Accept('text/tml')) {
+        	#source - or shoudl this be text/source...
         } else {
             $result = $pathInfo;
         }
