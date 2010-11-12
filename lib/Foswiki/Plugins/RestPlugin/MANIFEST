@@ -2,8 +2,6 @@
 data/System/RestPlugin.txt 0644 Documentation
 lib/Foswiki/Plugins/RestPlugin.pm 0644 Perl module
 
-#if dojo is installed, this will give you inline editing on formfields in view mode
-templates/formtables.dojo.tmpl
 templates/restpluginscript.tmpl
 
 pub/System/RestPlugin/wikiring-rest.png

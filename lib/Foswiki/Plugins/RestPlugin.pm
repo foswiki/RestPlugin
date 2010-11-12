@@ -1,18 +1,3 @@
-# Plugin for Foswiki Collaboration Platform, http://Foswiki.org/
-#
-# Copyright 2007-2009 SvenDowideit@fosiki.com
-#
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 3
-# of the License, or (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details, published at
-# http://www.gnu.org/copyleft/gpl.html
-
 package Foswiki::Plugins::RestPlugin;
 
 # Always use strict to enforce variable scoping
@@ -20,14 +5,13 @@ use strict;
 
 require Foswiki::Func;    # The plugins API
 require Foswiki::Plugins; # For the API version
-#require Foswiki::Contrib::DojoToolkitContrib;
 
 require JSON;
 
 use vars qw( $VERSION $RELEASE $SHORTDESCRIPTION $debug $pluginName $NO_PREFS_IN_TOPIC );
-$VERSION = '$Rev$';
-$RELEASE = 'Foswiki-1.0';
-$SHORTDESCRIPTION = 'Full implementation of REST';
+$VERSION = '1';
+$RELEASE = '2.0.0-a1';
+$SHORTDESCRIPTION = 'REST based CRUD API for javascript and applications';
 $NO_PREFS_IN_TOPIC = 1;
 $pluginName = 'RestPlugin';
 
@@ -35,7 +19,7 @@ sub initPlugin {
     my( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
-    if( $Foswiki::Plugins::VERSION < 1.026 ) {
+    if( $Foswiki::Plugins::VERSION < 2.0 ) {
         Foswiki::Func::writeWarning( "Version mismatch between $pluginName and Plugins.pm" );
         return 0;
     }
@@ -43,14 +27,6 @@ sub initPlugin {
     $debug = $Foswiki::cfg{Plugins}{RestPlugin}{Debug} || 0;
     Foswiki::Func::registerRESTHandler('RealRest', \&RealRest);
     
-    #TODO: use the skin path
-#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dojo.parser");
-#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.InlineEditBox");
-#    Foswiki::Contrib::DojoToolkitContrib::requireJS("dijit.form.TextBox");
-    my $javascript = Foswiki::Func::readTemplate('restpluginscript');
-    Foswiki::Func::addToHEAD($pluginName.'.InlineHandler', $javascript);
-
-    # Plugin correctly initialized
     return 1;
 }
 
@@ -244,3 +220,18 @@ my $ifParser;
 
 
 1;
+
+# Plugin for Foswiki Collaboration Platform, http://Foswiki.org/
+#
+# Copyright 2007-2009 SvenDowideit@fosiki.com
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 3
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details, published at
+# http://www.gnu.org/copyleft/gpl.html
