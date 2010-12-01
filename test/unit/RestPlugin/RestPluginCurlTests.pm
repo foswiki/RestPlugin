@@ -141,6 +141,61 @@ sub testGET {
 
         #TODO: test the other values we're returning
     }
+
+    {
+
+        #/Main/TopicDoesNotTexit/topic.json
+        my ( $replytext, $extraHash ) = $this->callCurl( 'GET', 'text/json', '',
+            Foswiki::Func::getScriptUrl( undef, undef, 'query' )
+              . '/Main/TopicDoesNotTexit/topic.json' );
+
+        #no payload
+        #        $this->assert_deep_equals( $fromJSON,
+        #            Foswiki::Serialise::convertMeta($meta) );
+        $this->assert_equals( '404', $extraHash->{HTTP_RESPONSE_STATUS} );
+        $this->assert_equals( 'Not Found',
+            $extraHash->{HTTP_RESPONSE_STATUS_TEXT} );
+        $this->assert_equals(
+            undef,
+
+            #"'Main.TopicDoesNotTexit'/topic",
+            $extraHash->{'X-Foswiki-Rest-Query'}
+        );
+
+        #TODO: test the other values we're returning
+    }
+
+}
+
+sub testPATCH {
+    my $this = shift;
+
+    {
+
+   #THIS MUST FAIL, guest should never have the ability to change System.WebHome
+   #/System/WebHome/topic.json
+        my ( $replytext, $extraHash ) = $this->callCurl(
+            'PATCH',
+            'text/json',
+            '{"_text": "Some text"}',
+            Foswiki::Func::getScriptUrl( undef, undef, 'query' )
+              . '/System/WebHome/topic.json'
+        );
+
+   #print STDERR $replytext;
+   #        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+   #my ( $meta, $text ) = Foswiki::Func::readTopic( 'System', 'WebHome' );
+   #        $this->assert_deep_equals( undef, $fromJSON );
+        $this->assert_equals( '401', $extraHash->{HTTP_RESPONSE_STATUS} );
+        $this->assert_equals( 'Authorization Required',
+            $extraHash->{HTTP_RESPONSE_STATUS_TEXT} );
+        $this->assert_equals(
+            undef,    #"'Main.WebHome'/topic",
+            $extraHash->{'X-Foswiki-Rest-Query'}
+        );
+
+        #TODO: test the other values we're returning
+    }
 }
 
 1;

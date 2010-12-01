@@ -29,6 +29,7 @@ our %serialiseFunctions = (
 
     #'text/html' => 'Foswiki::Serialise::html',
     'text/plain' => 'Foswiki::Serialise::raw',
+
     #'application/x-www-form-urlencoded' => ''
 );
 
@@ -71,7 +72,6 @@ sub mapMimeType {
 #WARNING: danger will-robinson - remember that the typical size limit on a payload is 2MB
 #TODO: redo the payloads to be _just_ the item, and plonk everything else in the header.
 #       that way we can do: curl -X PATCH -d "{fieldName: 'value to set to'}" http://x61/bin/query/Main/SvenDowideit/topic.json
-
 
 #TODO: work out how to apply the contentType to EngineExceptions..
 
@@ -172,6 +172,7 @@ sub query {
             $web   = $query;
             $baseObjectExists =
               ( ( $web eq '' ) or Foswiki::Func::webExists($web) );
+
             #$elementAlias = 'hash';    # if ( $elementAlias eq 'webs' );
             $query = "'$web'/$elementAlias";
         }
@@ -182,10 +183,12 @@ sub query {
             $baseObjectExists =
               (       Foswiki::Func::webExists($web)
                   and Foswiki::Func::topicExists( $web, $topic ) );
+
             #$elementAlias = 'hash';# if ( $elementAlias eq 'topic' );
             $query = "'$web.$topic'/$elementAlias";
         }
         else {
+
             #attachments are to a topic, so the simple regex above is ok
             $baseObjectExists =
               (       Foswiki::Func::webExists($web)
@@ -201,11 +204,11 @@ sub query {
 #need to test if this topic exists, as Meta->new currently returns an obj, even if the web, or the topic don't exist. totally yuck.
 #TODO: note that if we're PUT-ing and the item does not exist, we're basically POSTing, but to a static URI, not to a collection.
     if ( not $baseObjectExists ) {
-        $res->header( -type => 'text/html', -status => '401' );
+        $res->header( -type => 'text/html', -status => '404' );
         $err =
 "ERROR: (401) Invalid query invocation - web or topic do not exist ($web . $topic)";
         $res->print($err);
-        throw Foswiki::EngineException( 401, $err, $res );
+        throw Foswiki::EngineException( 404, $err, $res );
     }
     my $topicObject = Foswiki::Meta->new( $session, $web, $topic );
     print STDERR "---- actual Meta ("
@@ -217,7 +220,12 @@ sub query {
     $accessType = 'VIEW'   if ( $request_method eq 'GET' );
     $accessType = 'RENAME' if ( $request_method eq 'DELETE' );
 
-    $topicObject->haveAccess($accessType);
+    if ( not $topicObject->haveAccess($accessType) ) {
+        $res->header( -type => 'text/html', -status => '401' );
+        $err = "ERROR: (401) $accessType not permitted to ($web . $topic)";
+        $res->print($err);
+        throw Foswiki::EngineException( 401, $err, $res );
+    }
 
     my $requestContentType = $req->header('Content-Type') || 'text/json';
     my $requestPayload = REST::Utils::get_body($req);
@@ -225,22 +233,24 @@ sub query {
     print STDERR "----------- query : ||$query||\n";
     print STDERR "----------- requestContentType : ||$requestContentType||\n";
     print STDERR "----------- requestPayload : ||$requestPayload||\n";
-    if (($request_method ne 'GET') and ($requestPayload eq '')) {
-        print STDERR "@@@@@@@@@@@@@@@@@@@@ no payload. writing to /tmp/cgi.out\n";
-        open(OUT, '>', '/tmp/cgi.out');
-        $req->save(\*OUT);
+    if ( ( $request_method ne 'GET' ) and ( $requestPayload eq '' ) ) {
+        print STDERR
+          "@@@@@@@@@@@@@@@@@@@@ no payload. writing to /tmp/cgi.out\n";
+        open( OUT, '>', '/tmp/cgi.out' );
+        $req->save( \*OUT );
         close(OUT);
-#        return '';
+
+        #        return '';
     }
 
     #DOIT
     my $result;
     try {
         my $evalParser = new Foswiki::Query::Parser();
-        my $querytxt = $query;
+        my $querytxt   = $query;
         $querytxt =~ s/(webs|topic)$/hash/;
-print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
-        my $node       = $evalParser->parse($querytxt);
+        print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
+        my $node = $evalParser->parse($querytxt);
 
         #time it.
         my $startTime = [Time::HiRes::gettimeofday];
@@ -253,7 +263,7 @@ print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
             die 'not implemented';
         }
         elsif ( $request_method eq 'PATCH' ) {
-            ASSERT($requestPayload ne '') if DEBUG;
+            ASSERT( $requestPayload ne '' ) if DEBUG;
             my $value =
               Foswiki::Serialise::deserialise( $session, $requestPayload,
                 mapMimeType($requestContentType) );
@@ -265,32 +275,34 @@ print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
             $topicObject->save();
         }
         elsif ( $request_method eq 'POST' ) {
-            ASSERT($requestPayload ne '') if DEBUG;
-	#TODO: er, sorry, POST uri should be the web that the new topic will be made in...
-		    my $value =
-		      Foswiki::Serialise::deserialise( $session, $requestPayload,
-		        mapMimeType($requestContentType) );
+            ASSERT( $requestPayload ne '' ) if DEBUG;
+
+#TODO: er, sorry, POST uri should be the web that the new topic will be made in...
+            my $value =
+              Foswiki::Serialise::deserialise( $session, $requestPayload,
+                mapMimeType($requestContentType) );
 
             #TODO: mmm, very much presuming we're creating a topic.
-		    require Foswiki::UI::Save;
-		    $topic =
-		      Foswiki::UI::Save::expandAUTOINC( $session, $web,
-		        $value->{_topic} );
+            require Foswiki::UI::Save;
+            $topic =
+              Foswiki::UI::Save::expandAUTOINC( $session, $web,
+                $value->{_topic} );
 
-		    #new topic...
-		    $topicObject = Foswiki::Meta->new( $session, $web, $topic );
+            #new topic...
+            $topicObject = Foswiki::Meta->new( $session, $web, $topic );
 
-		    copyFrom( $topicObject, $value );
-		    $topicObject->text( $value->{_text} )
-		      if ( defined( $value->{_text} ) );
-		    $topicObject->save();
-		    
+            copyFrom( $topicObject, $value );
+            $topicObject->text( $value->{_text} )
+              if ( defined( $value->{_text} ) );
+            $topicObject->save();
+
     #if we created something and are returning it, and a uri for it, status=201
     #need a location header
     #if we created something, but are not returning it, then status = 200 or 204
     #could use 303 to redirect to the created resource too..?
             $res->status('201 OK');
-            #TODO: yes, needs to detect what we're creating and change the element alias appropriatly.
+
+#TODO: yes, needs to detect what we're creating and change the element alias appropriatly.
             $res->pushHeader( 'Location',
                 getResourceURI( $topicObject, 'topic' ) );
         }
@@ -302,17 +314,17 @@ print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
             #throw something  - this should have been noticed before
             die 'not implemented';
         }
-        if ($result->isa('Foswiki::Meta')) {
+        if ( $result->isa('Foswiki::Meta') ) {
             $result = Foswiki::Serialise::convertMeta($result);
         }
-        
+
 #TODO: the elementAlias and query != what was requested - it should be what is returned (for eg, POST is the item, not the container
 
         #end timer
         my $endTime = [Time::HiRes::gettimeofday];
         my $timeDiff = Time::HiRes::tv_interval( $startTime, $endTime );
 
-        #push this into the HTTP header, as the HTTP payload _is_ the resource data
+     #push this into the HTTP header, as the HTTP payload _is_ the resource data
         my $header_info = {
             query     => $query,
             element   => $elementAlias,
@@ -323,7 +335,8 @@ print STDERR "~~~~~~~~~~~~~~~~~~~~~~~$querytxt\n";
             endTime   => $endTime,
             time      => $timeDiff,
         };
-        map {$res->pushHeader( 'X-Foswiki-REST-'.$_, $header_info->{$_} )} keys(%$header_info);
+        map { $res->pushHeader( 'X-Foswiki-REST-' . $_, $header_info->{$_} ) }
+          keys(%$header_info);
         $result =
           Foswiki::Serialise::serialise( $session, $result,
             mapMimeType($responseContentType) );
