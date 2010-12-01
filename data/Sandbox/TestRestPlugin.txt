@@ -1,0 +1,108 @@
+%META:TOPICINFO{author="BaseUserMapping_333" date="1196240328" format="1.1" version="1"}%
+
+---+ Test %SYSTEMWEB%.RestPlugin
+%JQREQUIRE{"Form"}%
+
+<script>
+// prepare the form when the DOM is ready 
+$(document).ready(function() { 
+    var options = { 
+        target:        '#query_output',   // target element(s) to be updated with server response 
+        //beforeSubmit:  showRequest,  // pre-submit callback 
+        success:       showResponse  // post-submit callback 
+ 
+        // other available options: 
+        //url:       url         // override for form's 'action' attribute 
+        //type:      type        // 'get' or 'post', override for form's 'method' attribute 
+        //dataType:  null        // 'xml', 'script', or 'json' (expected server response type) 
+        //clearForm: true        // clear all form fields after successful submit 
+        //resetForm: true        // reset the form after successful submit 
+ 
+        // $.ajax options can be used here too, for example: 
+        //timeout:   3000 
+    };
+    $('#queryTestForm').submit(function() {
+    
+        var query = $('#queryTestForm #query').val();
+        var element = $('input:radio[name=element]:checked').val();
+        var encoding = $('input:radio[name=encoding]:checked').val();
+
+        // inside event callbacks 'this' is the DOM element so we first 
+        // wrap it in a jQuery object and then invoke ajaxSubmit
+        var request_it = {
+            target:        '#query_output',
+            url:           'http://x61/f/bin/query/'+query+'/'+element+'.'+encoding,
+            type:           'GET',
+            dataType:       encoding,
+            //beforeSubmit:  showRequest,  // pre-submit callback 
+            success:       showResponse  // post-submit callback 
+        };
+        //clear the textarea
+        $('#query_output').text('requesting');
+        $(this).ajaxSubmit(request_it); 
+ 
+        // !!! Important !!! 
+        // always return false to prevent standard browser submit and page navigation 
+        return false; 
+    });
+});
+// post-submit callback 
+function showResponse(responseText, statusText, data1, data2)  { 
+    var xhr, form;
+    if (data2 == null) {
+        //this is pre jquery 1.4
+        form = data1;
+    } else {
+        xhr = data1;
+        form = data2;
+    }
+    // for normal html responses, the first argument to the success callback 
+    // is the XMLHttpRequest object's responseText property 
+ 
+    // if the ajaxSubmit method was passed an Options Object with the dataType 
+    // property set to 'xml' then the first argument to the success callback 
+    // is the XMLHttpRequest object's responseXML property 
+ 
+    // if the ajaxSubmit method was passed an Options Object with the dataType 
+    // property set to 'json' then the first argument to the success callback 
+    // is the json data object returned by the server
+
+    
+    if ((typeof responseText) == 'string') {
+        $('#query_output').text(responseText);
+    } else {
+        $('#query_output').text(responseText._raw_text);
+    }
+
+
+    if (xhr != null) {
+        var responsetime = xhr.getResponseHeader("X-Foswiki-Rest-Time") + ' Seconds';
+        if ((responsetime == null) || (responsetime == '')) {
+            responsetime = 'not found';
+        }
+        $('#query_time').val(responsetime);
+    } else {
+        $('#query_time').val('no xhr availible - need jQuery 1.4 and jquery forms 2.43');
+    }
+}
+</script>
+
+<form id="queryTestForm">
+<input type="text" id="query" name="query" value="Main/WebHome" />
+%BR%
+Element:
+<input type="radio" name="element" value="topic" id="topic" checked/><label for="topic">.topic</label>
+<input type="radio" name="element" value="web" id="web" /><label for="web">.web</label>
+<input type="radio" name="element" value="attachment" id="attachment" /><label for="attachment">.attachment</label>%BR%
+Encoding:
+<input type="radio" name="encoding" value="json" id="json" checked/><label for="json">.json</label>
+<input type="radio" name="encoding" value="html" id="html" disabled/><label for="html">.html</label>
+<input type="radio" name="encoding" value="perl" id="perl" /><label for="perl">.perl</label>
+<input type="radio" name="encoding" value="text" id="text" /><label for="text">.text</label>
+%BR%
+<input type="submit" >
+</form>
+
+<textarea id="query_output" cols="80" rows="10"></textarea>
+<input type="text" id="query_time" name="query" size="80" />
+

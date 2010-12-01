@@ -13,58 +13,28 @@ One line description, required for extensions repository catalog.
 <img src="%PUBURL%/%WEB%/%TOPIC%/formfield_example.png" style="padding:6px" />
 
 ---++ Usage
-This plugin begins the task of creating a real REST URI engine for Foswiki. 
+This plugin begins the task of creating a CRUD style REST URI engine for Foswiki. 
 It uses a Foswiki:Development.TopicObjectModel addressing scheme based on the System.IfStatements and System.QuerySearch syntax, 
 and then enable both the retriving and setting / creation of topics and parts of topics.
 
----++ Examples
----++ request for rendered informaion:
-[[%SCRIPTURL{rest}%/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary?content_type=text/json][/rest/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary?content_type=text/json]] will return the requested Topic Object information. the final part of the URL is the same syntax as %SYSTEMWEB%.IfStatements.
+Initially supporting JSON encoding, it can be extended to anything - so long as symetrical serialisation/deserialisation are implemented using the (post foswiki 1.1) =Foswiki::Serialise= class.
 
-This information can then be used in a javascript input element to change the values.
+---+++ supported HTTP Request Types
+To suport the different operations, =query= supports =GET|PUT|POST|PATCH|DELETE=, 
+and as some web servers are set up to not accept all these, we can tunnel these using the URI param =?_method=PATCH=, 
+or and added Header element - =X-HTTP-METHOD-OVERRIDE=. Note that these must be tunneled via a =POST=
 
-<verbatim>
-{
-   "topic" : "BugItem1",
-   "web" : "Sandbox",
-   "url" : "/RestPlugin/RealRest/Sandbox.BugItem1:BugItemTemplate.Summary",
-   "result" : "Test this bug very carefully - it looks sneaky",
-   "field" : "BugItemTemplate.Summary"
-}
-</verbatim>
+---++++ GET
+---++++ PUT
+---++++ POST
+Creates a new element in a container. So if you want to create a new topic, the URI is that of the web you want to place it, and the payload will contain a value that has a =_topic=
+---++++ PATCH
+---++++ DELETE
 
-[[http://quad/trunk/bin/rest/RestPlugin/RealRest/Sandbox.BugItem1:text?content_type=text/text][/rest/RestPlugin/RealRest/Sandbox.BugItem1:text?content_type=text/text]] returns the topic text (in raw form..)
-
----++++ request parameters
-   * =content_type= - can return =text/json=, =text/text=, =text/html=.. - thus over-riding the mime type requested by the browser
-      * if you request a 'set' object and use type =text/json= you will get a json object containing the entire meta object's data.
-      * eg [[http://quad/trunk/bin/rest/RestPlugin/RealRest/Sandbox.WebHome?content_type=text/json][/rest/RestPlugin/RealRest/Sandbox.WebHome?content_type=text/json]] returns __TO be implemented__
----++++ REST access details
-   * all =GET= requests are non-modifying, and will return =json=, =html= or =text= as specified in the request
-   * =POST= will modify the element (CSRF mechanisms not yet supported)
-   * =HEAD= will probably confirm the existance of an element and return its last changed time
----+++ FORMFIELD 
-This allows you to change values in Foswiki DataForms without leaving the current topic - useful for reports and inline data-wiki applications. 
-This syntax will be simplified in future.
-
-This example alows you to view, and change the Summary Field in Sandbox.BugItem1 (from Foswiki:Extensions.BugsContrib) - by just clicking on the text, changing it, and then hitting ENTER
-
-%FORMFIELD{
-    "Summary" 
-    topic="Sandbox.BugItem1" 
-    default="(not set)" 
-    alttext="Summary field not found"
-    format="<span id='Sandbox.BugItem1:FIELD.Summary' class='RestPluginEditable' title='click to edit !Sandbox.BugItem1 Summary' dojoType='dijit.InlineEditBox' onChange='myHandler(this.id,arguments[0])'>$value</span>"
-}%
-<verbatim>
-%FORMFIELD{
-    "Summary" 
-    topic="Sandbox.BugItem1" 
-    default="(not set)" 
-    alttext="Summary field not found"
-    format="<span id='Sandbox.BugItem1:FIELD.Summary' class="RestPluginEditable" dojoType='dijit.InlineEditBox' onChange='myHandler(this.id,arguments[0])'>$value</span>"
-}%
-</verbatim>
+---+++ Examples:
+---++++ using =curl= to update topic data.
+=curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json= can be used to send a JSON payload 
+that will set _only_ the topic text of your user's topic (ignoring authentication issues)
 
 ---++ Installation Instructions
 
@@ -80,7 +50,7 @@ This example alows you to view, and change the Summary Field in Sandbox.BugItem1
 |  License: | [[http://www.gnu.org/licenses/gpl.html][GPL (Gnu General Public License)]] |
 |  Plugin Version: | %$VERSION% |
 |  Change History: | <!-- versions below in reverse order -->&nbsp; |
-|  Nov 2010:       | total rewrite using foswiki 1.1 concepts |
+|  Nov 2010:       | total rewrite using foswiki 1.1 concepts and syntax - see Foswiki:Development.RestPlugin |
 |  Nov 2009:       | separate from dojo, and update for new JSON module |
 |  Dependencies:   | %$DEPENDENCIES% |
 |  Plugin Home:    | http://foswiki.org/Extensions/RestPlugin |

@@ -1,6 +1,9 @@
 # Release manifest for RestPlugin
 data/System/RestPlugin.txt 0644 Documentation
 lib/Foswiki/Plugins/RestPlugin.pm 0644 Perl module
+lib/Foswiki/UI/Query.pm 0644 UI handler
+bin/query 0644 new cgi script
+lib/Foswiki/Plugins/RestPlugin/Config.spec 0644 Congfig
 
 templates/restpluginscript.tmpl
 
@@ -13,5 +16,10 @@ pub/System/RestPlugin/Image:Edit-chalk-10bo.png
 pub/System/RestPlugin/Wiki-text-icon.png
 
 #demo topic
+data/Sandbox/TestRestPlugin.txt
 data/Sandbox/BugItem1.txt
 data/Sandbox/BugItemTemplate.txt
+
+test/unit/RestPlugin/RestPluginSuite.pm
+test/unit/RestPlugin/RestPluginTests.pm
+test/unit/RestPlugin/RestPluginSeleniumTests.pm
