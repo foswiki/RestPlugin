@@ -8,6 +8,8 @@ use Foswiki::Func();
 use Foswiki::Meta      ();
 use Foswiki::Serialise ();
 use JSON               ();
+use File::Path qw(mkpath);
+
 
 sub new {
     my $self = shift()->SUPER::new(@_);
@@ -58,6 +60,15 @@ sub set_up {
 typically, a spade made with a thorny handle is functional, but not ideal.
 "
     );
+    Foswiki::Func::saveTopic(
+        $this->{test_web}, "SomeAttachments", $meta, "
+typically, a spade made with a thorny handle is functional, but not ideal.
+"
+    );
+
+#TODO: implementme - tbh, we need something simple in Func to attache existat files..
+#    $this->addAttachmentsToTopic( $this->{test_web}, 'SomeAttachments',
+#        ( 'one.txt', 'two.txt', 'inc/file.txt' ) );
 }
 
 sub callCurl {
@@ -77,6 +88,8 @@ sub callCurl {
       . '" -d \''
       . $requestContent . '\' '
       . $url;
+
+    print STDERR "----\n$curlCommand\n----\n";
     my $result = `$curlCommand 2>&1`
       ;    # grrrr, aparently they output the header info into stderr
 
@@ -239,6 +252,69 @@ sub testPATCH {
     );
 }
 
+sub test_attachmentsProjectLogos {
+    my $this = shift;
+
+    #requesting a list of attachments in the 'container' System.ProjectLogos
+    #/System/ProjectLogos/attachment.json
+    $this->runTest(
+        'GET',
+        'text/json',
+        '', 'System',
+        'ProjectLogos',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments',
+        },
+'[{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-badge.png","version":"2","date":"1227691956","name":"foswiki-badge.gif","path":"foswiki-badge.png","attr":"","size":"4807","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.gif","version":"2","date":"1227691994","name":"foswiki-logo.gif","path":"foswiki-logo.gif","attr":"","size":"7537","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.xcf","version":"1","date":"1227691956","name":"foswiki-logo.xcf","path":"foswiki-logo.xcf","attr":"","size":"45514","user":"ProjectContributor"}]'
+    );
+}
+
+sub test_attachmentsWebHome {
+    my $this = shift;
+
+    #no attachments on topic
+    $this->runTest(
+        'GET',
+        'text/json',
+        '', 'System',
+        'WebHome',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            'X-Foswiki-Rest-Query'    => '\'System.WebHome\'/attachments',
+        },
+        ''
+    );
+}
+sub test_attachments_modify {
+    my $this = shift;
+    
+    
+    #$this->{test_web}, 'SomeAttachments',
+    $this->runTest(
+        'GET',
+        'text/json',
+        '', 
+        $this->{test_web}, 
+        'SomeAttachments',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            'X-Foswiki-Rest-Query'    => '\'TemporaryRestPluginCurlTestsTestWebRestPluginCurlTests.SomeAttachments\'/attachments',
+        },
+        ''
+    );
+}
+
+
 sub runTest {
     my (
         $this,        $OP,          $sendType,
@@ -258,23 +334,28 @@ sub runTest {
           . $receiveType
     );
 
-    foreach my $key ( keys(%$expectedHash) ) {
+    foreach my $key ( sort keys(%$expectedHash) ) {
 
         #if scalar..
         $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
     }
 
-    $this->assert_equals( 'topic', $element,
+    $this->assert_matches( qr/^(topic|attachments)$/, $element,
         'only topic element implemented below' );
     $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
 
-    #TODO: this presumes that $element == topic
     if ( defined($expectedReplyPayload) ) {
 
-        #print STDERR $replytext;
-        my $replyObj = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        print STDERR "expected:\n";
+        print STDERR $expectedReplyPayload;
+        print STDERR "got:\n";
+        print STDERR $replytext;
+        my $replyObj =
+          Foswiki::Serialise::deserialise( $this->{session}, $replytext,
+            'json' );
         my $expectedObj =
-          JSON::from_json( $expectedReplyPayload, { allow_nonref => 1 } );
+          Foswiki::Serialise::deserialise( $this->{session},
+            $expectedReplyPayload, 'json' );
         $this->assert_deep_equals( $expectedObj, $replyObj );
 
         #TODO: can also compare to the meta obj we get??

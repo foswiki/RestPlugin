@@ -262,7 +262,9 @@ sub query {
         if ( $request_method eq 'GET' ) {
 
         #TODO: the query language currently presumes that the LHS of / isa topic
-            if ( $elementAlias eq 'topic' ) {
+            if (   ( $elementAlias eq 'topic' )
+                or ( $elementAlias eq 'attachments' ) )
+            {
                 my $evalParser = new Foswiki::Query::Parser();
                 my $querytxt   = $query;
                 $querytxt =~ s/(topic)$/hash/;
@@ -350,15 +352,19 @@ sub query {
 
         #might be an array of Meta's
         #TODO: should the reply _always_ be an array?
-        print STDERR "------------------ ref(result): " . ref($result) . "\n";
+        #print STDERR "------------------ ref(result): " . ref($result) . "\n";
         if ( ref($result) eq 'ARRAY' ) {
             for ( my $i = 0 ; $i < scalar(@$result) ; $i++ ) {
-                $result->[$i] =
-                  Foswiki::Serialise::convertMeta( $result->[$i] );
+
+#print STDERR "------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n";
+                if ( ref( $result->[$i] ) eq 'Foswiki::Meta' ) {
+                    $result->[$i] =
+                      Foswiki::Serialise::convertMeta( $result->[$i] );
+                }
             }
         }
         else {
-            if ( $result->isa('Foswiki::Meta') ) {
+            if ( ref($result) eq 'Foswiki::Meta' ) {
                 $result = Foswiki::Serialise::convertMeta($result);
             }
         }
@@ -391,6 +397,7 @@ sub query {
         #ouchie, VC::Handler errors
         my $e = shift;
         $result = $e->{-text};
+        print STDERR "SimpleERROR: $result\n";
         $res->status( '500 ' . $result );
     }
     catch Foswiki::Infix::Error with {
