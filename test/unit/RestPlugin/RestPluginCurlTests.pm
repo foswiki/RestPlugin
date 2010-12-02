@@ -176,65 +176,78 @@ sub testPATCH {
         'PATCH',
         'text/json',
         '{"_text": "Some text"}',
-        'System', 'WebHome', 'topic',
-        'json',
+        'System',
+        'WebHome',
+        'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
             'X-Foswiki-Rest-Query'    => undef,
         }
     );
-    
+
     $this->runTest(
         'PATCH',
         'text/json',
         '{"_text": "Some text"}',
-        'Sandbox', 'TestTopicAUTOINC001', 'topic',
-        'json',
+        'Sandbox',
+        'TestTopicAUTOINC001',
+        'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '404',
             HTTP_RESPONSE_STATUS_TEXT => 'Not Found',
             'X-Foswiki-Rest-Query'    => undef,
         }
     );
-    #$this->{test_web}, "Improvement2"
+
+#$this->{test_web}, "Improvement2"
 #ER POOP. the test web is created with the wrong filesystem user, so can't be accessed by the web server (in some setups.)
     $this->runTest(
         'PATCH',
         'text/json',
         '{"_text": "Some text"}',
-        $this->{test_web},'Improvement2','topic',
-        'json',
+        $this->{test_web},
+        'Improvement2',
+        'topic', 'json',
         {
-            HTTP_RESPONSE_STATUS      => '500',
+            HTTP_RESPONSE_STATUS => '500',
+
 #            HTTP_RESPONSE_STATUS_TEXT => 'OK',
 #            'X-Foswiki-Rest-Query'    => '\''.$this->{test_web}.'.Improvement2\'/topic',
         }
     );
+
 #TODO: {rest_test_web}  needs to be created using curl - so that the webserver permissions are useable.
-return;
-    #COPY 
+    return;
+
+    #COPY
     #$this->{rest_test_web}, "Improvement2"
     $this->runTest(
         'PATCH',
         'text/json',
         '{"_topic": "ACopyOfImprovement2"}',
-        $this->{rest_test_web},'Improvement2','topic',
-        'json',
+        $this->{rest_test_web},
+        'Improvement2',
+        'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\''.$this->{rest_test_web}.'.ACopyOfImprovement2\'/topic',
+            'X-Foswiki-Rest-Query'    => '\''
+              . $this->{rest_test_web}
+              . '.ACopyOfImprovement2\'/topic',
         }
     );
 }
 
 sub runTest {
-    my ( $this, $OP, $sendType, $sendPayload, $web, $topic, $element, $receiveType,
-        $expectedHash, $expectedReplyPayload )
-      = @_;
-      
-      my $query = '/'.$web.'/'.$topic.'/'.$element;
+    my (
+        $this,        $OP,          $sendType,
+        $sendPayload, $web,         $topic,
+        $element,     $receiveType, $expectedHash,
+        $expectedReplyPayload
+    ) = @_;
+
+    my $query = '/' . $web . '/' . $topic . '/' . $element;
 
     my ( $replytext, $extraHash ) = $this->callCurl(
         $OP,
@@ -251,17 +264,22 @@ sub runTest {
         $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
     }
 
-      $this->assert_equals('topic', $element, 'only topic element implemented below');
-      $this->assert_equals('json', $receiveType, 'only JSON implemented below');
+    $this->assert_equals( 'topic', $element,
+        'only topic element implemented below' );
+    $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
+
     #TODO: this presumes that $element == topic
-    if (defined($expectedReplyPayload)) {
-       #print STDERR $replytext;
-       my $replyObj = JSON::from_json( $replytext, { allow_nonref => 1 } );
-       my $expectedObj = JSON::from_json( $expectedReplyPayload, { allow_nonref => 1 } );
-       $this->assert_deep_equals( $expectedObj, $replyObj );
-       #TODO: can also compare to the meta obj we get??
-       #my ( $meta, $text ) = Foswiki::Func::readTopic( $web, $topic );
-       #$this->assert_deep_equals( convertMETA($meta), $replyObj );
+    if ( defined($expectedReplyPayload) ) {
+
+        #print STDERR $replytext;
+        my $replyObj = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        my $expectedObj =
+          JSON::from_json( $expectedReplyPayload, { allow_nonref => 1 } );
+        $this->assert_deep_equals( $expectedObj, $replyObj );
+
+        #TODO: can also compare to the meta obj we get??
+        #my ( $meta, $text ) = Foswiki::Func::readTopic( $web, $topic );
+        #$this->assert_deep_equals( convertMETA($meta), $replyObj );
     }
 
 }

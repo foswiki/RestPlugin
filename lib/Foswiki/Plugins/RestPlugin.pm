@@ -3,36 +3,38 @@ package Foswiki::Plugins::RestPlugin;
 # Always use strict to enforce variable scoping
 use strict;
 
-require Foswiki::Func;    # The plugins API
-require Foswiki::Plugins; # For the API version
+require Foswiki::Func;       # The plugins API
+require Foswiki::Plugins;    # For the API version
 
 require JSON;
 
-use vars qw( $VERSION $RELEASE $SHORTDESCRIPTION $debug $pluginName $NO_PREFS_IN_TOPIC );
-$VERSION = '1';
-$RELEASE = '2.0.0-a1';
-$SHORTDESCRIPTION = 'REST based CRUD API for javascript and applications';
+use vars
+  qw( $VERSION $RELEASE $SHORTDESCRIPTION $debug $pluginName $NO_PREFS_IN_TOPIC );
+$VERSION           = '1';
+$RELEASE           = '2.0.0-a1';
+$SHORTDESCRIPTION  = 'REST based CRUD API for javascript and applications';
 $NO_PREFS_IN_TOPIC = 1;
-$pluginName = 'RestPlugin';
+$pluginName        = 'RestPlugin';
 
 sub initPlugin {
-    my( $topic, $web, $user, $installWeb ) = @_;
+    my ( $topic, $web, $user, $installWeb ) = @_;
 
     # check for Plugins.pm versions
-    if( $Foswiki::Plugins::VERSION < 2.0 ) {
-        Foswiki::Func::writeWarning( "Version mismatch between $pluginName and Plugins.pm" );
+    if ( $Foswiki::Plugins::VERSION < 2.0 ) {
+        Foswiki::Func::writeWarning(
+            "Version mismatch between $pluginName and Plugins.pm");
         return 0;
     }
 
     $debug = $Foswiki::cfg{Plugins}{RestPlugin}{Debug} || 0;
-   
+
     #tell Foswiki::UI about the new handler.
     $Foswiki::cfg{SwitchBoard}{attach} = {
         package  => 'Foswiki::UI::Query',
         function => 'query',
         context  => { query => 1 },
     };
-    
+
     return 1;
 }
 

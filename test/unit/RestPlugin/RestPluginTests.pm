@@ -56,10 +56,11 @@ sub call_UI_query {
     $query->method($action);
     my $sess = $Foswiki::Plugins::SESSION;
 
-print STDERR "=-=- the user running the UI: ".$this->{test_user_login}."\n";
+    print STDERR "=-=- the user running the UI: "
+      . $this->{test_user_login} . "\n";
     $fatwilly = new Foswiki( $this->{test_user_login}, $query );
 
-    my ($text, $result, $stdout, $stderr) = $this->capture(
+    my ( $text, $result, $stdout, $stderr ) = $this->capture(
         sub {
             no strict 'refs';
             &$UI_FN($fatwilly);
@@ -108,79 +109,78 @@ sub testGET_topic {
             Foswiki::Serialise::convertMeta($meta) );
     }
 }
+
 sub testGET_webs {
     my $this = shift;
     ##WEB
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( 'System' );
+        my ( $meta, $text ) = Foswiki::Func::readTopic('System');
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
-            '/' . 'System' . '/webs.json',
-            'GET', {} );
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/' . 'System' . '/webs.json', 'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
-            [Foswiki::Serialise::convertMeta($meta)] );
+            [ Foswiki::Serialise::convertMeta($meta) ] );
     }
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web} );
+        my ( $meta, $text ) = Foswiki::Func::readTopic( $this->{test_web} );
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
-            '/' . $this->{test_web} . '/webs.json',
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
             'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
-            [Foswiki::Serialise::convertMeta($meta)] );
+            [ Foswiki::Serialise::convertMeta($meta) ] );
     }
 }
+
 #TODO: catching an exception inside a capture - gotta find out how to doit.
 sub TODOtestGET_webs_doesnotexist {
     my $this = shift;
+
     #TODO: does not exist
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( 'SystemDoesNotExist' );
+        my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
 
         try {
-            my ( $replytext, $hdr ) = $this->call_UI_query(
-                '/' . 'SystemDoesNotExist' . '/webs.json',
+            my ( $replytext, $hdr ) =
+              $this->call_UI_query( '/' . 'SystemDoesNotExist' . '/webs.json',
                 'GET', {} );
             my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
             $this->assert_deep_equals( $fromJSON,
-                [Foswiki::Serialise::convertMeta($meta)] );
-            } catch Foswiki::EngineException with {
-                my $e = shift;
-                my $result = $e->{-text};
-                #$res->status( '500 ' . $result );
-                print STDERR "******************($result)\n";
-            }
+                [ Foswiki::Serialise::convertMeta($meta) ] );
+        }
+        catch Foswiki::EngineException with {
+            my $e      = shift;
+            my $result = $e->{-text};
+
+            #$res->status( '500 ' . $result );
+            print STDERR "******************($result)\n";
+        }
     }
 }
+
 sub testGET_allwebs {
     my $this = shift;
     {
-        #get all webs..
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( 'SystemDoesNotExist' );
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
-            '/webs.json',
-            'GET', {} );
+        #get all webs..
+        my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
+
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/webs.json', 'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        
+
         my @webs = Foswiki::Func::getListOfWebs( '', '' );
         my @results = map {
-                                my ( $meta, $text ) = Foswiki::Func::readTopic( $_ );
-                                print STDERR "::::: load($_) == ".$meta->web."\n"; 
-                                Foswiki::Serialise::convertMeta($meta)
-                        } @webs;
-        
-        $this->assert_deep_equals( $fromJSON,
-            \@results );
+            my ( $meta, $text ) = Foswiki::Func::readTopic($_);
+            print STDERR "::::: load($_) == " . $meta->web . "\n";
+            Foswiki::Serialise::convertMeta($meta)
+        } @webs;
+
+        $this->assert_deep_equals( $fromJSON, \@results );
     }
 }
-
 
 sub LATERtestGET_NoSuchTopic {
     my $this = shift;
@@ -189,8 +189,10 @@ sub LATERtestGET_NoSuchTopic {
         my ( $replytext, $hdr );
         try {
             ( $replytext, $hdr ) =
-              $this->call_UI_query( '/Main/WebHomeDoesNotExist/topic.json', 'GET', {} );
-        } finally {
+              $this->call_UI_query( '/Main/WebHomeDoesNotExist/topic.json',
+                'GET', {} );
+        }
+        finally {
             print STDERR "hllo";
         }
         print STDERR "HEADER: $hdr\n";
@@ -198,8 +200,6 @@ sub LATERtestGET_NoSuchTopic {
 
     }
 }
-
-
 
 #modify partial item updates
 sub testPATCH_CompleteTopic {
@@ -237,12 +237,9 @@ sub testPATCH_CompleteTopic {
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
             'Actually, its brilliant!' );
-        $this->assert_equals( $NEWfromJSON->{_text},
-            $fromJSON->{_text} );
-        $this->assert_str_not_equals(
-            $NEWfromJSON->{_raw_text},
-            $fromJSON->{_raw_text}
-        );
+        $this->assert_equals( $NEWfromJSON->{_text}, $fromJSON->{_text} );
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
     }
 }
 
@@ -265,9 +262,8 @@ sub testPATCH_JustOneField_Topic {
 
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        $partialItem->{FIELD}[0]->{value} =
-          'Something new, something blue';
-        foreach my $key ( keys( %{ $partialItem } ) ) {
+        $partialItem->{FIELD}[0]->{value} = 'Something new, something blue';
+        foreach my $key ( keys( %{$partialItem} ) ) {
             next if ( $key eq 'FIELD' );
             delete $partialItem->{$key};
         }
@@ -295,20 +291,21 @@ sub testPATCH_JustOneField_Topic {
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
-        $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
-            'Something new, something blue' );
-
-        $this->assert_str_not_equals(
-            $NEWfromJSON->{_raw_text},
-            $fromJSON->{_raw_text}
+        $this->assert_equals(
+            $NEWfromJSON->{FIELD}[0]->{value},
+            'Something new, something blue'
         );
-        $this->assert_equals( $NEWfromJSON->{_text},
-            $fromJSON->{_text} );
+
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
+        $this->assert_equals( $NEWfromJSON->{_text}, $fromJSON->{_text} );
+
         #make sure the other FIELD is still as it was before.
         $this->assert_equals( $NEWfromJSON->{FIELD}[1]->{value},
             $fromJSON->{FIELD}[1]->{value} );
-        $this->assert_equals('work it out yourself!',  $NEWfromJSON->{FIELD}[1]->{value} );
-        $this->assert_equals('Details',  $NEWfromJSON->{FIELD}[1]->{name} );
+        $this->assert_equals( 'work it out yourself!',
+            $NEWfromJSON->{FIELD}[1]->{value} );
+        $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
 }
 
@@ -331,15 +328,14 @@ sub testPATCH_JustText_Topic {
 
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        $partialItem->{_text} =
-          'Something new, something blue';
-        foreach my $key ( keys( %{ $partialItem } ) ) {
+        $partialItem->{_text} = 'Something new, something blue';
+        foreach my $key ( keys( %{$partialItem} ) ) {
             next if ( $key eq '_text' );
             delete $partialItem->{$key};
         }
         my $sendJSON = JSON::to_json($partialItem);
 
-        print STDERR "----send--------\n".$sendJSON."\n------------\n";
+        print STDERR "----send--------\n" . $sendJSON . "\n------------\n";
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -364,19 +360,19 @@ sub testPATCH_JustText_Topic {
         $this->assert_equals( $NEWfromJSON->{_text},
             'Something new, something blue' );
 
-        $this->assert_str_not_equals(
-            $NEWfromJSON->{_raw_text},
-            $fromJSON->{_raw_text}
-        );
-        $this->assert_equals( $fromJSON->{FIELD}[0]->{value}, $NEWfromJSON->{FIELD}[0]->{value} );
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
+        $this->assert_equals( $fromJSON->{FIELD}[0]->{value},
+            $NEWfromJSON->{FIELD}[0]->{value} );
+
         #make sure the other FIELD is still as it was before.
         $this->assert_equals( $NEWfromJSON->{FIELD}[1]->{value},
             $fromJSON->{FIELD}[1]->{value} );
-        $this->assert_equals('work it out yourself!',  $NEWfromJSON->{FIELD}[1]->{value} );
-        $this->assert_equals('Details',  $NEWfromJSON->{FIELD}[1]->{name} );
+        $this->assert_equals( 'work it out yourself!',
+            $NEWfromJSON->{FIELD}[1]->{value} );
+        $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
 }
-
 
 #create new items
 sub testPOST {
@@ -388,29 +384,33 @@ sub testPOST {
     my ( $replytext, $hdr ) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
-print STDERR "------($replytext)\n";
+    print STDERR "------($replytext)\n";
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
     $this->assert_deep_equals( $fromJSON,
         Foswiki::Serialise::convertMeta($meta) );
 
-#make sure we get a different timestamp..
-sleep(2);
-
+    #make sure we get a different timestamp..
+    sleep(2);
 
 #modify it a little and POST to a new topic name..
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
     $fromJSON->{FIELD}[0]->{value} = 'Actually, its brilliant!';
     $fromJSON->{_topic} = 'Improvement3';
     my $sendJSON = JSON::to_json($fromJSON);
-    ( $replytext, $hdr ) = $this->call_UI_query(
-        '/' . $this->{test_web} . '/webs.json',
+    ( $replytext, $hdr ) =
+      $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     print STDERR "################### $hdr ######################\n";
     $hdr =~ /Location: (.*)/;
     my $LocationInHdr = $1;
-    $this->assert_str_equals(Foswiki::Func::getScriptUrl(undef, undef, 'query').'/' . $this->{test_web} . '/Improvement3/topic', $LocationInHdr);
+    $this->assert_str_equals(
+        Foswiki::Func::getScriptUrl( undef, undef, 'query' ) . '/'
+          . $this->{test_web}
+          . '/Improvement3/topic',
+        $LocationInHdr
+    );
 
     #then make sure it saved using GET..
     {
@@ -419,18 +419,15 @@ sleep(2);
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement3/topic.json',
             'GET', {} );
-print STDERR "------($replytext)\n";
+        print STDERR "------($replytext)\n";
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
             'Actually, its brilliant!' );
-        $this->assert_equals( $NEWfromJSON->{_text},
-            $fromJSON->{_text} );
-        $this->assert_str_not_equals(
-            $NEWfromJSON->{_raw_text},
-            $fromJSON->{_raw_text}
-        );
+        $this->assert_equals( $NEWfromJSON->{_text}, $fromJSON->{_text} );
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
         $this->assert_str_not_equals(
             $NEWfromJSON->{TOPICINFO}[0]->{date},
             $fromJSON->{TOPICINFO}[0]->{date}
@@ -448,14 +445,13 @@ sub testPOST_AUTOINC001 {
     my ( $replytext, $hdr ) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
-print STDERR "------($replytext)\n";
+    print STDERR "------($replytext)\n";
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
     $this->assert_deep_equals( $fromJSON,
         Foswiki::Serialise::convertMeta($meta) );
 
-#make sure we get a different timestamp..
-sleep(2);
-
+    #make sure we get a different timestamp..
+    sleep(2);
 
 #modify it a little and POST to a new topic name..
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
@@ -463,8 +459,8 @@ sleep(2);
     $fromJSON->{_topic} = 'TestTopicAUTOINC001';
 
     my $sendJSON = JSON::to_json($fromJSON);
-    ( $replytext, $hdr ) = $this->call_UI_query(
-        '/' . $this->{test_web} . '/webs.json',
+    ( $replytext, $hdr ) =
+      $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -476,24 +472,20 @@ sleep(2);
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/TestTopic001/topic.json',
             'GET', {} );
-print STDERR "------($replytext)\n";
+        print STDERR "------($replytext)\n";
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
             'Actually, its brilliant!' );
-        $this->assert_equals( $NEWfromJSON->{_text},
-            $fromJSON->{_text} );
-        $this->assert_str_not_equals(
-            $NEWfromJSON->{_raw_text},
-            $fromJSON->{_raw_text}
-        );
+        $this->assert_equals( $NEWfromJSON->{_text}, $fromJSON->{_text} );
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
         $this->assert_str_not_equals(
             $NEWfromJSON->{TOPICINFO}[0]->{date},
             $fromJSON->{TOPICINFO}[0]->{date}
         );
     }
 }
-
 
 1;

@@ -197,14 +197,15 @@ sub query {
         }
 
     }
-    elsif (($query eq '') and ($elementAlias eq 'webs')) {
+    elsif ( ( $query eq '' ) and ( $elementAlias eq 'webs' ) ) {
+
         #we're getting all the webs..
-        $web = '';
-        $topic = undef;
+        $web              = '';
+        $topic            = undef;
         $baseObjectExists = 1;
     }
     else {
-        die 'not implemented ('.$query.')';
+        die 'not implemented (' . $query . ')';
     }
 
 #need to test if this topic exists, as Meta->new currently returns an obj, even if the web, or the topic don't exist. totally yuck.
@@ -217,7 +218,9 @@ sub query {
         throw Foswiki::EngineException( 404, $err, $res );
     }
     my $topicObject = Foswiki::Meta->new( $session, $web, $topic );
-    print STDERR "---- new($web, ". ( $topic || '>UNDEF<' ) . ") ==  actual Meta ("
+    print STDERR "---- new($web, "
+      . ( $topic || '>UNDEF<' )
+      . ") ==  actual Meta ("
       . $topicObject->web . ", "
       . ( $topicObject->topic || '>UNDEF<' ) . ")\n";
 
@@ -252,30 +255,37 @@ sub query {
     #DOIT
     my $result;
     try {
+
         #time it.
         my $startTime = [Time::HiRes::gettimeofday];
 
         if ( $request_method eq 'GET' ) {
-            #TODO: the query language currently presumes that the LHS of / isa topic 
-            if ($elementAlias eq 'topic') {
+
+        #TODO: the query language currently presumes that the LHS of / isa topic
+            if ( $elementAlias eq 'topic' ) {
                 my $evalParser = new Foswiki::Query::Parser();
                 my $querytxt   = $query;
                 $querytxt =~ s/(topic)$/hash/;
-                print STDERR "~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
+                print STDERR
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
                 my $node = $evalParser->parse($querytxt);
 
-                $result = $node->evaluate( tom => $topicObject, data => $topicObject );
-            } elsif ($elementAlias eq 'webs') {
-                #TODO: get all subwebs of LHS - so ''/webs == /webs == all webs recursive.
-                #TODO: consider filter of Func::getListOfWebs( $filter [, $web] )
+                $result =
+                  $node->evaluate( tom => $topicObject, data => $topicObject );
+            }
+            elsif ( $elementAlias eq 'webs' ) {
+
+      #TODO: get all subwebs of LHS - so ''/webs == /webs == all webs recursive.
+      #TODO: consider filter of Func::getListOfWebs( $filter [, $web] )
                 my $filter = '';
                 my @webs = Foswiki::Func::getListOfWebs( $filter, $web );
-                unshift(@webs, $web) if ($web ne '');
+                unshift( @webs, $web ) if ( $web ne '' );
                 my @results = map {
-                                        my $m = Foswiki::Meta->load( $Foswiki::Plugins::SESSION, $_ );
-                                        print STDERR "::::: load($_) == ".$m->web."\n"; 
-                                        $m
-                                } @webs;
+                    my $m =
+                      Foswiki::Meta->load( $Foswiki::Plugins::SESSION, $_ );
+                    print STDERR "::::: load($_) == " . $m->web . "\n";
+                    $m
+                } @webs;
                 $result = \@results;
             }
         }
@@ -316,7 +326,7 @@ sub query {
             $topicObject->text( $value->{_text} )
               if ( defined( $value->{_text} ) );
             $topicObject->save();
-            
+
             $result = $topicObject;
 
     #if we created something and are returning it, and a uri for it, status=201
@@ -337,14 +347,17 @@ sub query {
             #throw something  - this should have been noticed before
             die 'not implemented';
         }
+
         #might be an array of Meta's
         #TODO: should the reply _always_ be an array?
-        print STDERR "------------------ ref(result): ".ref($result)."\n";
-        if (ref($result) eq 'ARRAY') {
-            for (my $i=0; $i<scalar(@$result);$i++) {
-                $result->[$i] = Foswiki::Serialise::convertMeta($result->[$i]);
+        print STDERR "------------------ ref(result): " . ref($result) . "\n";
+        if ( ref($result) eq 'ARRAY' ) {
+            for ( my $i = 0 ; $i < scalar(@$result) ; $i++ ) {
+                $result->[$i] =
+                  Foswiki::Serialise::convertMeta( $result->[$i] );
             }
-        } else {
+        }
+        else {
             if ( $result->isa('Foswiki::Meta') ) {
                 $result = Foswiki::Serialise::convertMeta($result);
             }
@@ -374,6 +387,7 @@ sub query {
             mapMimeType($responseContentType) );
     }
     catch Error::Simple with {
+
         #ouchie, VC::Handler errors
         my $e = shift;
         $result = $e->{-text};
