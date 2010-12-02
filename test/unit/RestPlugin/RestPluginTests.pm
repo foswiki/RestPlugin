@@ -79,7 +79,7 @@ print STDERR "=-=- the user running the UI: ".$this->{test_user_login}."\n";
     return ( $text, $1 );
 }
 
-sub testGET {
+sub testGET_topic {
     my $this = shift;
 
     {
@@ -108,6 +108,79 @@ sub testGET {
             Foswiki::Serialise::convertMeta($meta) );
     }
 }
+sub testGET_webs {
+    my $this = shift;
+    ##WEB
+    {
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( 'System' );
+
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . 'System' . '/webs.json',
+            'GET', {} );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        $this->assert_deep_equals( $fromJSON,
+            [Foswiki::Serialise::convertMeta($meta)] );
+    }
+    {
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( $this->{test_web} );
+
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . $this->{test_web} . '/webs.json',
+            'GET', {} );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        $this->assert_deep_equals( $fromJSON,
+            [Foswiki::Serialise::convertMeta($meta)] );
+    }
+}
+#TODO: catching an exception inside a capture - gotta find out how to doit.
+sub TODOtestGET_webs_doesnotexist {
+    my $this = shift;
+    #TODO: does not exist
+    {
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( 'SystemDoesNotExist' );
+
+        try {
+            my ( $replytext, $hdr ) = $this->call_UI_query(
+                '/' . 'SystemDoesNotExist' . '/webs.json',
+                'GET', {} );
+            my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+            $this->assert_deep_equals( $fromJSON,
+                [Foswiki::Serialise::convertMeta($meta)] );
+            } catch Foswiki::EngineException with {
+                my $e = shift;
+                my $result = $e->{-text};
+                #$res->status( '500 ' . $result );
+                print STDERR "******************($result)\n";
+            }
+    }
+}
+sub testGET_allwebs {
+    my $this = shift;
+    {
+        #get all webs..
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( 'SystemDoesNotExist' );
+
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/webs.json',
+            'GET', {} );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        
+        my @webs = Foswiki::Func::getListOfWebs( '', '' );
+        my @results = map {
+                                my ( $meta, $text ) = Foswiki::Func::readTopic( $_ );
+                                print STDERR "::::: load($_) == ".$meta->web."\n"; 
+                                Foswiki::Serialise::convertMeta($meta)
+                        } @webs;
+        
+        $this->assert_deep_equals( $fromJSON,
+            \@results );
+    }
+}
+
 
 sub LATERtestGET_NoSuchTopic {
     my $this = shift;
