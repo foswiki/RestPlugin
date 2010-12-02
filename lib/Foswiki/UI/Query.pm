@@ -341,6 +341,12 @@ sub query {
           Foswiki::Serialise::serialise( $session, $result,
             mapMimeType($responseContentType) );
     }
+    catch Error::Simple with {
+        #ouchie, VC::Handler errors
+        my $e = shift;
+        $result = $e->{-text};
+        $res->status( '500 ' . $result );
+    }
     catch Foswiki::Infix::Error with {
         my $e = shift;
         $result = $e->{-text};
