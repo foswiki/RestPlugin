@@ -19,6 +19,32 @@ and then enable both the retriving and setting / creation of topics and parts of
 
 Initially supporting JSON encoding, it can be extended to anything - so long as symetrical serialisation/deserialisation are implemented using the (post foswiki 1.1) =Foswiki::Serialise= class.
 
+---+++ Resources
+---++++ Web
+| *Verb*   | *Implemented* | *URI*                                               | *Use* |
+| =GET=    |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=      |  get web resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
+| =POST=   |     yes        | =http://x61/bin/query/[{Webname}/]webs[.json]=     |  create a new web in the uri's container web - parameters in payload as for the manage=createWeb     |
+| =PUT=    |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  update a web resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
+| =PATCH=  |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  same as PUT?     |
+| =DELETE= |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  delete web     |
+---++++ Topic
+| *Verb*   | *Implemented* | *URI*                                               | *Use* |
+| =GET=    |     yes       | =http://x61/bin/query/{Webname}/[{TopicName/}]topic[.json]=      |  get topic's meta (if no TopicName is specified, list of all topics in a web. (array of names only?))    |
+| =POST=   |     yes        | =http://x61/bin/query/{Webname}/topic[.json]=                   |  (TODO: might rejig to use UI::Manage::_create) create a new topic in the web container using the payload as topic data, and respecting AUTOINC name requests |
+| =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update/create a topic resource completely with the payload - anything missing from the sent structure will be removed in the new revision, will not respect AUTOINC, and will use the topic name in the URI, not the payload. |
+| =PATCH=  |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update a topic using only a partial data - leaving unsent fields the same as n-1    |
+| =DELETE= |     no        | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  delete topic     |
+---++++ Attachments
+| *Verb*   | *Implemented* | *URI*                                               | *Use* |
+| =GET=    |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/[{attachmentname}/]attachments[.json]=      |  get attachment resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
+| =POST=   |     no        | =http://x61/bin/query/{Webname}/{TopicName}/attachments[.json]=        |  create a new attachment ('this is essentially 'COPY', so might just be a consistency Alias)     |
+| =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  update a attachment resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
+| =PATCH=  |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  same as PUT?     |
+| =DELETE= |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  delete attachment     |
+
+---++++ unsupported requests
+you cannot make a =topic= or =attachment= element request on the root (eg =http://x61/f/bin/query/topic=), or an =attachment= request on a web.
+
 ---+++ supported HTTP Request Types
 To suport the different operations, =query= supports =GET|PUT|POST|PATCH|DELETE=, 
 and as some web servers are set up to not accept all these, we can tunnel these using the URI param =?_method=PATCH=, 

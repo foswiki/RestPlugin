@@ -112,6 +112,57 @@ s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{]) (.*)(\n)/addToResultHash($1, $2, $3, $
     return ( $result, $data );
 }
 
+sub runTest {
+    my (
+        $this,        $OP,          $sendType,
+        $sendPayload, $web,         $topic,
+        $element,     $receiveType, $expectedHash,
+        $expectedReplyPayload
+    ) = @_;
+
+    my $query = '/' . $web . '/' . $topic . '/' . $element;
+
+    my ( $replytext, $extraHash ) = $this->callCurl(
+        $OP,
+        $sendType,
+        $sendPayload,
+        Foswiki::Func::getScriptUrl( undef, undef, 'query' ) 
+          . $query . '.'
+          . $receiveType
+    );
+
+    foreach my $key ( sort keys(%$expectedHash) ) {
+
+        #if scalar..
+        $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
+    }
+
+    $this->assert_matches( qr/^(topic|attachments)$/, $element,
+        'only topic element implemented below' );
+    $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
+
+    if ( defined($expectedReplyPayload) ) {
+
+        print STDERR "expected:\n";
+        print STDERR $expectedReplyPayload;
+        print STDERR "got:\n";
+        print STDERR $replytext;
+        my $replyObj =
+          Foswiki::Serialise::deserialise( $this->{session}, $replytext,
+            'json' );
+        my $expectedObj =
+          Foswiki::Serialise::deserialise( $this->{session},
+            $expectedReplyPayload, 'json' );
+        $this->assert_deep_equals( $expectedObj, $replyObj );
+
+        #TODO: can also compare to the meta obj we get??
+        #my ( $meta, $text ) = Foswiki::Func::readTopic( $web, $topic );
+        #$this->assert_deep_equals( convertMETA($meta), $replyObj );
+    }
+
+}
+
+
 sub addToResultHash {
     my ( $timestamp, $type, $text, $hash ) = @_;
 
@@ -132,11 +183,33 @@ sub addToResultHash {
     return '';
 }
 
-sub testGET {
+sub testGET_topiclist {
     my $this = shift;
 
-    {
+    {#(list of topics...)
+        #/Main/topic.json
+        my ( $replytext, $extraHash ) = $this->callCurl( 'GET', 'text/json', '',
+            Foswiki::Func::getScriptUrl( undef, undef, 'query' )
+              . '/Main/topic.json' );
 
+        #print STDERR $replytext;
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        my @topicList = map { {'_topic'=> $_} } Foswiki::Func::getTopicList('Main');
+        $this->assert_deep_equals( $fromJSON,
+            \@topicList);
+        $this->assert_equals( '200', $extraHash->{HTTP_RESPONSE_STATUS} );
+        $this->assert_equals( 'OK',  $extraHash->{HTTP_RESPONSE_STATUS_TEXT} );
+        $this->assert_equals( "'Main'/topic",
+            $extraHash->{'X-Foswiki-Rest-Query'} );
+
+        #TODO: test the other values we're returning
+    }
+
+}
+
+sub testGET {
+    my $this = shift;
+    {
         #/Main/WebHome/topic.json
         my ( $replytext, $extraHash ) = $this->callCurl( 'GET', 'text/json', '',
             Foswiki::Func::getScriptUrl( undef, undef, 'query' )
@@ -295,7 +368,6 @@ sub test_attachmentsWebHome {
 sub test_attachments_modify {
     my $this = shift;
     
-    
     #$this->{test_web}, 'SomeAttachments',
     $this->runTest(
         'GET',
@@ -312,57 +384,7 @@ sub test_attachments_modify {
         },
         ''
     );
-}
-
-
-sub runTest {
-    my (
-        $this,        $OP,          $sendType,
-        $sendPayload, $web,         $topic,
-        $element,     $receiveType, $expectedHash,
-        $expectedReplyPayload
-    ) = @_;
-
-    my $query = '/' . $web . '/' . $topic . '/' . $element;
-
-    my ( $replytext, $extraHash ) = $this->callCurl(
-        $OP,
-        $sendType,
-        $sendPayload,
-        Foswiki::Func::getScriptUrl( undef, undef, 'query' ) 
-          . $query . '.'
-          . $receiveType
-    );
-
-    foreach my $key ( sort keys(%$expectedHash) ) {
-
-        #if scalar..
-        $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
-    }
-
-    $this->assert_matches( qr/^(topic|attachments)$/, $element,
-        'only topic element implemented below' );
-    $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
-
-    if ( defined($expectedReplyPayload) ) {
-
-        print STDERR "expected:\n";
-        print STDERR $expectedReplyPayload;
-        print STDERR "got:\n";
-        print STDERR $replytext;
-        my $replyObj =
-          Foswiki::Serialise::deserialise( $this->{session}, $replytext,
-            'json' );
-        my $expectedObj =
-          Foswiki::Serialise::deserialise( $this->{session},
-            $expectedReplyPayload, 'json' );
-        $this->assert_deep_equals( $expectedObj, $replyObj );
-
-        #TODO: can also compare to the meta obj we get??
-        #my ( $meta, $text ) = Foswiki::Func::readTopic( $web, $topic );
-        #$this->assert_deep_equals( convertMETA($meta), $replyObj );
-    }
-
+#TODO: boom, and here again, I need to be able to create a web, or delete a topic..
 }
 
 1;

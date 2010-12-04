@@ -50,14 +50,14 @@ typically, a spade made with a thorny handle is functional, but not ideal.
 }
 
 sub call_UI_query {
-    my ( $this, $url, $action, $params ) = @_;
+    my ( $this, $url, $action, $params, $cuid ) = @_;
     my $query = new Unit::Request($params);
     $query->path_info($url);
     $query->method($action);
     my $sess = $Foswiki::Plugins::SESSION;
+    $cuid = $this->{test_user_login} unless defined($cuid);
 
-    print STDERR "=-=- the user running the UI: "
-      . $this->{test_user_login} . "\n";
+    print STDERR "=-=- the user running the UI: " . $cuid . "\n";
     $fatwilly = new Foswiki( $this->{test_user_login}, $query );
 
     my ( $text, $result, $stdout, $stderr ) = $this->capture(
@@ -398,7 +398,7 @@ sub testPOST {
     $fromJSON->{_topic} = 'Improvement3';
     my $sendJSON = JSON::to_json($fromJSON);
     ( $replytext, $hdr ) =
-      $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
+      $this->call_UI_query( '/' . $this->{test_web} . '/topic.json',
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -460,7 +460,7 @@ sub testPOST_AUTOINC001 {
 
     my $sendJSON = JSON::to_json($fromJSON);
     ( $replytext, $hdr ) =
-      $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
+      $this->call_UI_query( '/' . $this->{test_web} . '/topic.json',
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -485,6 +485,131 @@ sub testPOST_AUTOINC001 {
             $NEWfromJSON->{TOPICINFO}[0]->{date},
             $fromJSON->{TOPICINFO}[0]->{date}
         );
+    }
+}
+
+sub test_copy_topic {
+    my $this = shift;
+
+#TODO: this is a dumb blind copy, where we even copy attachment meta that is not valid for this new topic.
+
+    {
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . $this->{test_web} . '/Improvement2/topic.json',
+            'GET', {} );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        $fromJSON->{_topic} = 'CopyOfimprovement2';
+
+        $this->assert(
+            not Foswiki::Func::topicExists(
+                $this->{test_web}, 'CopyOfimprovement2'
+            )
+        );
+        my $sendJSON = JSON::to_json($fromJSON);
+        
+        sleep(1);
+
+        #POST to the web..
+        ( $replytext, $hdr ) =
+          $this->call_UI_query( '/' . $this->{test_web} . '/topic.json',
+            'POST', { 'POSTDATA' => $sendJSON } );
+
+        $this->assert(
+            Foswiki::Func::topicExists(
+                $this->{test_web}, 'CopyOfimprovement2'
+            )
+        );
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( $this->{test_web}, 'CopyOfimprovement2' );
+          
+        #amend $fromJSON's time&author
+        $sendJSON =~ s/BaseUserMapping_666/scum/g;
+        $sendJSON =~ s/$fromJSON->{TOPICINFO}[0]->{date}/$meta->{TOPICINFO}[0]->{date}/g;
+        $this->assert_deep_equals( Foswiki::Serialise::convertMeta($meta),
+            JSON::from_json($sendJSON, { allow_nonref => 1 }) );
+    }
+}
+
+sub test_create_web {
+    my $this = shift;
+
+    #TODO: make sure the Location and other Headers are correct..
+    {
+        my $newWeb = $this->{test_web} . 'REST';
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+
+        #create  web using _default
+        my $sendJSON = JSON::to_json(
+            {
+                baseweb    => '_default',
+                newweb     => $newWeb,
+                webbgcolor => '#ff2222',
+                websummary => 'web created by query REST API'
+            }
+        );
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/webs.json?copy', 'POST',
+            { 'POSTDATA' => $sendJSON },
+            'BaseUserMapping_333' );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+        $this->assert( '#ff2222',
+            Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+        $this->assert( 'web created by query REST API',
+            Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
+    }
+
+    {
+        my $newWeb = 'Sandbox/' . $this->{test_web} . 'REST';
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+
+        #create  web using _default
+        my $sendJSON = JSON::to_json(
+            {
+                baseweb    => '_default',
+                newweb     => $newWeb,
+                webbgcolor => '#22ff22',
+                websummary => 'subweb created by query REST API'
+            }
+        );
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/webs.json?copy', 'POST',
+            { 'POSTDATA' => $sendJSON },
+            'BaseUserMapping_333' );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+        $this->assert( '#22ff22',
+            Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+        $this->assert( 'subweb created by query REST API',
+            Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
+    }
+    {    #this one the newWeb should become a subweb of the uri web..
+        my $nestedWeb = $this->{test_web} . 'Again';
+        my $newWeb    = 'Sandbox/' . $nestedWeb;
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+
+        #create  web using _default
+        my $sendJSON = JSON::to_json(
+            {
+                baseweb    => '_default',
+                newweb     => $nestedWeb,
+                webbgcolor => '#22ff22',
+                websummary => 'another subweb created by query REST API'
+            }
+        );
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/Sandbox/webs.json?copy', 'POST',
+            { 'POSTDATA' => $sendJSON },
+            'BaseUserMapping_333' );
+        my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+
+        $this->assert( not Foswiki::Func::webExists($newWeb) );
+        $this->assert( '#22ff22',
+            Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+        $this->assert( 'another subweb created by query REST API',
+            Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
 }
 

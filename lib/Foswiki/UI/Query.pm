@@ -180,12 +180,31 @@ sub query {
 
 #I created a quick hack in the QueryAlgo::getField so that element 'hash' returned the meta object
 #need to map topic==hash
+            my $webExists = Foswiki::Func::webExists($web);
+            my $topicExists = Foswiki::Func::topicExists( $web, $topic );
             $baseObjectExists =
-              (       Foswiki::Func::webExists($web)
-                  and Foswiki::Func::topicExists( $web, $topic ) );
+              ( $webExists and $topicExists );
 
             #$elementAlias = 'hash';# if ( $elementAlias eq 'topic' );
             $query = "'$web.$topic'/$elementAlias";
+
+            if (   ( ( $web eq '' ) and defined($topic) )
+                or ( $webExists and not $topicExists ) )
+            {
+
+              #perhaps its a request of the web container for a list of topics..
+                my $testWeb = $web;
+                $testWeb .= '/' if ( length($testWeb) );
+                $testWeb .= $topic if ( defined($topic) and ( $topic ne '' ) );
+
+                if ( Foswiki::Func::webExists($testWeb) ) {
+                    $baseObjectExists = 1;
+                    $web              = $testWeb;
+                    $topic            = undef;
+                    $query            = "'$web'/$elementAlias";
+
+                }
+            }
         }
         else {
 
@@ -228,6 +247,10 @@ sub query {
     my $accessType = 'CHANGE';
     $accessType = 'VIEW'   if ( $request_method eq 'GET' );
     $accessType = 'RENAME' if ( $request_method eq 'DELETE' );
+    $accessType = 'ROOTCHANGE'
+      if (  ( $request_method ne 'GET' )
+        and ( $web eq '' )
+        and ( not defined($topic) ) );
 
     if ( not $topicObject->haveAccess($accessType) ) {
         $res->header( -type => 'text/html', -status => '401' );
@@ -265,15 +288,31 @@ sub query {
             if (   ( $elementAlias eq 'topic' )
                 or ( $elementAlias eq 'attachments' ) )
             {
-                my $evalParser = new Foswiki::Query::Parser();
-                my $querytxt   = $query;
-                $querytxt =~ s/(topic)$/hash/;
-                print STDERR
-"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
-                my $node = $evalParser->parse($querytxt);
+                if ( ( $elementAlias eq 'topic' ) and not( defined($topic) ) ) {
 
-                $result =
-                  $node->evaluate( tom => $topicObject, data => $topicObject );
+                #asking for a list of topics..
+                #TODO: really bad idea - use a paging itr, or use a real query..
+                    my @topicList =
+                      map { { '_topic' => $_ } }
+                      Foswiki::Func::getTopicList($web);
+                    $result = \@topicList;
+                }
+
+#                elsif (( $elementAlias eq 'attachments' ) and not(defined($topic))) {
+#                }
+                else {
+                    my $evalParser = new Foswiki::Query::Parser();
+                    my $querytxt   = $query;
+                    $querytxt =~ s/(topic)$/hash/;
+                    print STDERR
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
+                    my $node = $evalParser->parse($querytxt);
+
+                    $result = $node->evaluate(
+                        tom  => $topicObject,
+                        data => $topicObject
+                    );
+                }
             }
             elsif ( $elementAlias eq 'webs' ) {
 
@@ -310,26 +349,65 @@ sub query {
         elsif ( $request_method eq 'POST' ) {
             ASSERT( $requestPayload ne '' ) if DEBUG;
 
-#TODO: er, sorry, POST uri should be the web that the new topic will be made in...
             my $value =
               Foswiki::Serialise::deserialise( $session, $requestPayload,
                 mapMimeType($requestContentType) );
 
-            #TODO: mmm, very much presuming we're creating a topic.
-            require Foswiki::UI::Save;
-            $topic =
-              Foswiki::UI::Save::expandAUTOINC( $session, $web,
-                $value->{_topic} );
+            if ( $elementAlias eq 'topic' ) {
+                require Foswiki::UI::Save;
+                $topic =
+                  Foswiki::UI::Save::expandAUTOINC( $session, $web,
+                    $value->{_topic} );
+#TODO: actually, consider using the UI::Manage::_create
+                #new topic...
+                $topicObject = Foswiki::Meta->new( $session, $web, $topic );
+print STDERR "\n\nPOST: create new topic Meta ("
+      . $topicObject->web . ", "
+      . ( $topicObject->topic || '>UNDEF<' ) . ")\n\n\n";
 
-            #new topic...
-            $topicObject = Foswiki::Meta->new( $session, $web, $topic );
+                copyFrom( $topicObject, $value );
+                $topicObject->text( $value->{_text} )
+                  if ( defined( $value->{_text} ) );
+                $topicObject->save();
+                $result = $topicObject;
+                $res->pushHeader( 'Location',
+                    getResourceURI( $topicObject, 'topic' ) );
+            }
+            elsif ( $elementAlias eq 'webs' ) {
 
-            copyFrom( $topicObject, $value );
-            $topicObject->text( $value->{_text} )
-              if ( defined( $value->{_text} ) );
-            $topicObject->save();
+                #web creation - call UI::Manage::createWeb()
+                ASSERT( not defined($topic) ) if DEBUG;
+                $value->{newweb} = $web . '/' . $value->{newweb}
+                  if ( defined($web) );
+                require Foswiki::UI::Manage;
+                my $newReq = new Foswiki::Request($value)
+                  ;    #use the payload to initialise the manage request
+                       #$newReq->path_info($url);
+                $newReq->method('manage');
+                my $oldReq = $session->{request};
+                $session->{request} = $newReq;
+                try {
 
-            $result = $topicObject;
+          #                    Foswiki::UI::Manage::_action_createweb($session);
+                  } catch Foswiki::OopsException with {
+                    my $e = shift;
+                    die 'whatever: ';
+                }
+                my @results = ();
+                my $webObject =
+                  Foswiki::Meta->load( $Foswiki::Plugins::SESSION,
+                    $value->{newweb} );
+                push( @results, $webObject );
+                $result = \@results;
+                $session->{request} = $oldReq;
+
+                $res->pushHeader( 'Location',
+                    getResourceURI( $webObject, 'webs' ) );
+
+            }
+            else {
+                die 'not implemented';
+            }
 
     #if we created something and are returning it, and a uri for it, status=201
     #need a location header
@@ -337,9 +415,6 @@ sub query {
     #could use 303 to redirect to the created resource too..?
             $res->status('201 OK');
 
-#TODO: yes, needs to detect what we're creating and change the element alias appropriatly.
-            $res->pushHeader( 'Location',
-                getResourceURI( $topicObject, 'topic' ) );
         }
         elsif ( $request_method eq 'DELETE' ) {
             die 'not implemented';
@@ -424,7 +499,9 @@ sub getResourceURI {
 
     #TODO: er, and what about attchments?
     #TODO: and allow mimetype to be added later
-    return Foswiki::Func::getScriptUrl( $meta->web, $meta->topic, 'query' )
+    my ( $web, $topic ) = ( $meta->web, $meta->topic );
+    $topic = undef if ( $elementAlias eq 'webs' );
+    return Foswiki::Func::getScriptUrl( $web, $topic, 'query' )
       . "/$elementAlias";
 }
 
