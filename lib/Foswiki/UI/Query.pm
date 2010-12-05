@@ -422,7 +422,9 @@ print STDERR "\n\nPOST: create new topic Meta ("
 
         }
         elsif ( $request_method eq 'DELETE' ) {
-            die 'not implemented';
+            my $attachment = undef;
+            $topicObject->removeFromStore( $attachment );
+            $result = {};
         }
         else {
 

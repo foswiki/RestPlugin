@@ -434,6 +434,16 @@ sub testPOST {
             $fromJSON->{TOPICINFO}[0]->{date}
         );
     }
+    #DELETE it
+        $this->assert(Foswiki::Func::topicExists($this->{test_web}, 'Improvement3'));
+
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/' . $this->{test_web} . '/Improvement3/topic.json', 'DELETE',
+            {},
+            'BaseUserMapping_333' );
+
+        $this->assert( not Foswiki::Func::topicExists($this->{test_web}, 'Improvement3') );
+
 }
 
 #create new items
@@ -534,6 +544,10 @@ sub test_copy_topic {
 sub test_create_web {
     my $this = shift;
 
+#TODO: move to 'clean' processor
+    $this->deleteWebs(1, ($this->{test_web} . 'REST', 'Sandbox/' . $this->{test_web} . 'REST', 'Sandbox/'.$this->{test_web} . 'Again'));
+
+
 my @websToDelete;
 
     #TODO: make sure the Location and other Headers are correct..
@@ -585,7 +599,7 @@ my @websToDelete;
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
         $this->assert( Foswiki::Func::webExists($newWeb) );
-        $this->assertt_equals( '#22ff22',
+        $this->assert_equals( '#22ff22',
             Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
         $this->assert_equals( 'subweb created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
@@ -612,14 +626,32 @@ my @websToDelete;
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
         $this->assert( Foswiki::Func::webExists($newWeb) );
-        $this->assertt_equals( '#22ff22',
+        $this->assert_equals( '#22ff22',
             Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
         $this->assert_equals( 'another subweb created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
-    
+    $this->deleteWebs(undef, @websToDelete);
+}
+
+sub deleteWebs {
+    my $this = shift;
+    my $cleaning = shift;
+    my @websToDelete = @_;
     #delete all webs we just made.. (again, needs to use the REST API so that the permissions are ok.)
-    
+    foreach my $deleteWeb (@websToDelete)
+    {
+        #if we're cleaning, we don't care if the web exists or not, we just want to make sure its gone before we start the test
+        next if ($cleaning and not( Foswiki::Func::webExists($deleteWeb) ));
+        $this->assert(Foswiki::Func::webExists($deleteWeb));
+
+        my ( $replytext, $hdr ) =
+          $this->call_UI_query( '/'.$deleteWeb.'/webs.json?copy', 'DELETE',
+            {},
+            'BaseUserMapping_333' );
+
+        $this->assert( not Foswiki::Func::webExists($deleteWeb) );
+    }
 }
 
 1;
