@@ -99,17 +99,36 @@ sub callCurl {
 
     my $data = { '*' => '', '>' => '', '<' => '', '{' => '' };
     $result =~
-s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{]) (.*)(\r\n)/addToResultHash($1, $2, $3, $data)/gem;
+s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{}]) (.*)(\r\n)/addToResultHash($1, $2, $3, $data)/gem;
 
 #argh. \r?\n isn't working for me, so i'll just run the regex twice until i get enough sleep to have a clue.
     $result =~
-s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{]) (.*)(\n)/addToResultHash($1, $2, $3, $data)/gem;
+s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{}]) (.*)(\n)/addToResultHash($1, $2, $3, $data)/gem;
 
     #print STDERR "\n================\n$result\n==========\n";
 
 #print STDERR join("\n-----------------\n", ($result, $data->{'*'}, $data->{'>'}, $data->{'<'}));
 
     return ( $result, $data );
+}
+sub addToResultHash {
+    my ( $timestamp, $type, $text, $hash ) = @_;
+
+    $hash->{$type} .= "$timestamp $type $text\n";
+    if ( $type eq '<' ) {    #response header
+                             #HTTP/1.1 200 OK
+        if ( $text =~ /HTTP\/1.1\s(\d*)\s(.*)/ ) {
+            $hash->{HTTP_RESPONSE_STATUS}      = $1;
+            $hash->{HTTP_RESPONSE_STATUS_TEXT} = $2;
+        }
+
+        #X-Foswiki-Rest-Query: 'Main.SvenDowideit'/topic etc
+        if ( $text =~ /(.*?):\s*(.*)/ ) {
+            $hash->{$1} = $2;
+        }
+    }
+
+    return '';
 }
 
 sub runTest {
@@ -120,7 +139,12 @@ sub runTest {
         $expectedReplyPayload
     ) = @_;
 
-    my $query = '/' . $web . '/' . $topic . '/' . $element;
+    #my $query = '/' . $web . '/' . $topic . '/' . $element;
+    my @path;
+    push(@path, $web) if (defined($web) and ($web ne ''));
+    push(@path, $topic) if (defined($topic) and ($topic ne ''));
+    push(@path, $element) if (defined($element) and ($element ne ''));
+    my $query = '/'.join('/', @path);
 
     my ( $replytext, $extraHash ) = $this->callCurl(
         $OP,
@@ -132,13 +156,12 @@ sub runTest {
     );
 
     foreach my $key ( sort keys(%$expectedHash) ) {
-
         #if scalar..
         $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
     }
 
-    $this->assert_matches( qr/^(topic|attachments)$/, $element,
-        'only topic element implemented below' );
+#    $this->assert_matches( qr/^(topic|attachments)$/, $element,
+#        'only topic element implemented below' );
     $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
 
     if ( defined($expectedReplyPayload) ) {
@@ -162,25 +185,87 @@ sub runTest {
 
 }
 
+sub test_create_web {
+    my $this = shift;
+    
+    #$this->{test_web}, 'SomeAttachments',
+    my $newWeb = 'RestPluginCurlWeb';
+    $this->runTest(
+        'POST',
+        'text/json',
+        '{
+                "baseweb"    : "_default",
+                "newweb"     : "'.$newWeb.'",
+                "webbgcolor" : "#22ff22",
+                "websummary" : "another subweb created by query REST AP"
+            }', 
+        '', 
+        '',
+        'webs',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '201',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+#            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
+#            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/webs',
+        },
+        undef
+    );
 
-sub addToResultHash {
-    my ( $timestamp, $type, $text, $hash ) = @_;
+    $this->assert( not Foswiki::Func::webExists($newWeb) );
+    $this->assertt_equals( '#22ff22',
+        Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+    $this->assertt_equals( 'web created by query REST API',
+        Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
 
-    $hash->{$type} .= "$timestamp $type $text\n";
-    if ( $type eq '<' ) {    #response header
-                             #HTTP/1.1 200 OK
-        if ( $text =~ /HTTP\/1.1\s(\d*)\s(.*)/ ) {
-            $hash->{HTTP_RESPONSE_STATUS}      = $1;
-            $hash->{HTTP_RESPONSE_STATUS_TEXT} = $2;
-        }
 
-        #X-Foswiki-Rest-Query: 'Main.SvenDowideit'/topic etc
-        if ( $text =~ /(.*):\s*(.*)/ ) {
-            $hash->{$1} = $2;
-        }
-    }
-
-    return '';
+    #odd, it tells me that there is a web, but I can't see it on disk.
+    $newWeb = 'RestPluginCurlWeb/Subweb';
+    $this->runTest(
+        'POST',
+        'text/json',
+        '{
+                "baseweb"    : "_default",
+                "newweb"     : "'.$newWeb.'",
+                "webbgcolor" : "#22ff22",
+                "websummary" : "subweb created by query REST API"
+            }', 
+        '', 
+        '',
+        'webs',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '201',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+#            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
+#            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
+        },
+        undef
+    );
+    
+    #this should fail..
+    $newWeb = 'NotThereRestPluginCurlWeb/Subweb';
+    $this->runTest(
+        'POST',
+        'text/json',
+        '{
+                "baseweb"    : "_default",
+                "newweb"     : "'.$newWeb.'",
+                "webbgcolor" : "#22ff22",
+                "websummary" : "subweb created by query REST API"
+            }', 
+        '', 
+        '',
+        'webs',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '404',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+#            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
+#            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
+        },
+        undef
+    );
 }
 
 sub testGET_topiclist {

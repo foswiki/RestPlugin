@@ -374,11 +374,10 @@ print STDERR "\n\nPOST: create new topic Meta ("
                     getResourceURI( $topicObject, 'topic' ) );
             }
             elsif ( $elementAlias eq 'webs' ) {
-
                 #web creation - call UI::Manage::createWeb()
                 ASSERT( not defined($topic) ) if DEBUG;
                 $value->{newweb} = $web . '/' . $value->{newweb}
-                  if ( defined($web) );
+                  if ( defined($web) and ($web ne ''));
                 require Foswiki::UI::Manage;
                 my $newReq = new Foswiki::Request($value)
                   ;    #use the payload to initialise the manage request
@@ -386,20 +385,26 @@ print STDERR "\n\nPOST: create new topic Meta ("
                 $newReq->method('manage');
                 my $oldReq = $session->{request};
                 $session->{request} = $newReq;
+                #TODO: disable strikone for now
+                my $validation = $Foswiki::cfg{Validation}{Method};
+                $Foswiki::cfg{Validation}{Method} = 'none';
                 try {
-
-          #                    Foswiki::UI::Manage::_action_createweb($session);
+                    Foswiki::UI::Manage::_action_createweb($session);
                   } catch Foswiki::OopsException with {
                     my $e = shift;
-                    die 'whatever: ';
+                    die 'whatever: '.$e->{template}.'....'.$e->stringify() if not($e->{template} eq 'attention' and $e->{def} eq 'created_web');
+                    
                 }
                 my @results = ();
+                ASSERT( Foswiki::Func::webExists($value->{newweb}) ) if DEBUG;
                 my $webObject =
                   Foswiki::Meta->load( $Foswiki::Plugins::SESSION,
                     $value->{newweb} );
+                ASSERT($webObject->existsInStore()) if DEBUG;
                 push( @results, $webObject );
                 $result = \@results;
                 $session->{request} = $oldReq;
+                $Foswiki::cfg{Validation}{Method} = $validation;
 
                 $res->pushHeader( 'Location',
                     getResourceURI( $webObject, 'webs' ) );
@@ -494,15 +499,18 @@ sub getResourceURI {
 
     print STDERR "getResourceURI - getScriptUrl("
       . $meta->web . ", "
-      . $meta->topic
+      . ($meta->topic||'>UNDEF<')
       . ", 'query')\n";
 
     #TODO: er, and what about attchments?
     #TODO: and allow mimetype to be added later
     my ( $web, $topic ) = ( $meta->web, $meta->topic );
-    $topic = undef if ( $elementAlias eq 'webs' );
-    return Foswiki::Func::getScriptUrl( $web, $topic, 'query' )
+    $topic = 'ZZyZZyyyayyayyaSven' if ( $elementAlias eq 'webs' );
+    my $uri = Foswiki::Func::getScriptUrl( $web, $topic, 'query' )
       . "/$elementAlias";
+    $uri =~ s/\/ZZyZZyyyayyayyaSven//;  #it seems that getScriptUrl doesn't like $topic=undef
+print STDERR "   getResourceURI -> $uri\n";
+    return $uri;
 }
 
 sub _writeCompletePage {

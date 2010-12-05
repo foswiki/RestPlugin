@@ -57,8 +57,9 @@ sub call_UI_query {
     my $sess = $Foswiki::Plugins::SESSION;
     $cuid = $this->{test_user_login} unless defined($cuid);
 
-    print STDERR "=-=- the user running the UI: " . $cuid . "\n";
-    $fatwilly = new Foswiki( $this->{test_user_login}, $query );
+    my $loginname = Foswiki::Func::wikiToUserName($cuid);
+    print STDERR "=-=- the user running the UI: " . $loginname . "\n";
+    $fatwilly = new Foswiki( $loginname, $query );
 
     my ( $text, $result, $stdout, $stderr ) = $this->capture(
         sub {
@@ -533,9 +534,12 @@ sub test_copy_topic {
 sub test_create_web {
     my $this = shift;
 
+my @websToDelete;
+
     #TODO: make sure the Location and other Headers are correct..
     {
         my $newWeb = $this->{test_web} . 'REST';
+        push(@websToDelete, $newWeb);
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -553,15 +557,16 @@ sub test_create_web {
             'BaseUserMapping_333' );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
-        $this->assert( not Foswiki::Func::webExists($newWeb) );
-        $this->assert( '#ff2222',
+        $this->assert( Foswiki::Func::webExists($newWeb) );
+        $this->assert_equals( '#ff2222',
             Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
-        $this->assert( 'web created by query REST API',
+        $this->assert_equals( 'web created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
 
     {
         my $newWeb = 'Sandbox/' . $this->{test_web} . 'REST';
+        push(@websToDelete, $newWeb);
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -579,15 +584,16 @@ sub test_create_web {
             'BaseUserMapping_333' );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
-        $this->assert( not Foswiki::Func::webExists($newWeb) );
-        $this->assert( '#22ff22',
+        $this->assert( Foswiki::Func::webExists($newWeb) );
+        $this->assertt_equals( '#22ff22',
             Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
-        $this->assert( 'subweb created by query REST API',
+        $this->assert_equals( 'subweb created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
     {    #this one the newWeb should become a subweb of the uri web..
         my $nestedWeb = $this->{test_web} . 'Again';
         my $newWeb    = 'Sandbox/' . $nestedWeb;
+        push(@websToDelete, $newWeb);
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -605,12 +611,15 @@ sub test_create_web {
             'BaseUserMapping_333' );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
-        $this->assert( not Foswiki::Func::webExists($newWeb) );
-        $this->assert( '#22ff22',
+        $this->assert( Foswiki::Func::webExists($newWeb) );
+        $this->assertt_equals( '#22ff22',
             Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
-        $this->assert( 'another subweb created by query REST API',
+        $this->assert_equals( 'another subweb created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
+    
+    #delete all webs we just made.. (again, needs to use the REST API so that the permissions are ok.)
+    
 }
 
 1;
