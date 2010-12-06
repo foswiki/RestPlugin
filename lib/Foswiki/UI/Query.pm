@@ -207,11 +207,11 @@ sub query {
             }
         }
         else {
-            print STDERR "****************($web)($topic)\n";
 
             #attachments are to a topic, so the simple regex above is ok
             my $webExists = Foswiki::Func::webExists($web);
             my $topicExists = Foswiki::Func::topicExists( $web, $topic );
+            print STDERR "****************($web)($topic)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').")\n";
             $baseObjectExists = ( $webExists and $topicExists );
             $query = "'$web.$topic'/$elementAlias";
             
@@ -219,11 +219,11 @@ sub query {
                 $attachment = $topic;
                 $web   = $1;
                 $topic = $2;
-            print STDERR "*******************($web)($topic)($attachment)\n";
                 #perhaps we're requesting Web/Topic/attachmentname/attachment.json..
                 $webExists = Foswiki::Func::webExists($web);
                 $topicExists = Foswiki::Func::topicExists( $web, $topic );
                 my $attachmentExists = Foswiki::Func::attachmentExists($web, $topic, $attachment);
+            print STDERR "******************($web)($topic)($attachment)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').", attach:".($attachmentExists?'exists':'unknown').")\n";
                 $baseObjectExists = ( $webExists and $topicExists and $attachmentExists);
                 $query = "'$web.$topic'/".$elementAlias."[name='$attachment']";
             }
@@ -275,6 +275,8 @@ sub query {
 
     my $requestContentType = $req->header('Content-Type') || 'text/json';
     my $requestPayload = REST::Utils::get_body($req);
+#untaint randomly :/
+$requestPayload =~ /(.*)/; $requestPayload = $1;
     print STDERR "----------- request_method : ||$request_method||\n";
     print STDERR "----------- query : ||$query||\n";
     print STDERR "----------- requestContentType : ||$requestContentType||\n";
@@ -349,16 +351,48 @@ sub query {
         }
         elsif ( $request_method eq 'PATCH' ) {
             ASSERT( $requestPayload ne '' ) if DEBUG;
-            my $value =
-              Foswiki::Serialise::deserialise( $session, $requestPayload,
-                mapMimeType($requestContentType) );
-            copyFrom( $topicObject, $value );    #copy meta..
+                my $value =
+                  Foswiki::Serialise::deserialise( $session, $requestPayload,
+                    mapMimeType($requestContentType) );
+            if ($elementAlias eq 'topic') {
+                copyFrom( $topicObject, $value );    #copy meta..
+    
+    #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n";
+                $topicObject->text( $value->{_text} )
+                  if ( defined( $value->{_text} ) );
+                $topicObject->save();
+                $result = Foswiki::Serialise::convertMeta($topicObject);
+            } elsif ($elementAlias eq 'attachments') {
+                if ((not defined($attachment)) or ($attachment eq '')) {
+                    my $hash = {"FILEATTACHMENT" => $value};
+                    copyFrom( $topicObject, $hash );    #copy meta..
+        
+        #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n";
+                } else {
+                    my $info = $topicObject->getAttachmentRevisionInfo($attachment);
+use Data::Dumper;
+print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n";
+                    @{$info}{keys(%$value)} = values(%$value); #over-ride the server version with whats in the payload
+print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n";
+                    #TODO: shoudl make sure there's no stream or file set
+#                    delete $info->{stream};
+#                    delete $info->{file};
+                    $topicObject->attach(%$info)
+                }
+                $topicObject->save();
+                    #COPY&PASTE from GET...
+                    my $evalParser = new Foswiki::Query::Parser();
+                    my $querytxt   = $query;
+                    $querytxt =~ s/(topic)$/hash/;
+                    print STDERR
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
+                    my $node = $evalParser->parse($querytxt);
 
-#print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n";
-            $topicObject->text( $value->{_text} )
-              if ( defined( $value->{_text} ) );
-            $topicObject->save();
-            $result = $topicObject;
+                    $result = $node->evaluate(
+                        tom  => $topicObject,
+                        data => $topicObject
+                    );
+            }
         }
         elsif ( $request_method eq 'POST' ) {
             ASSERT( $requestPayload ne '' ) if DEBUG;
@@ -492,6 +526,8 @@ print STDERR "\n\nPOST: create new topic Meta ("
 
         #ouchie, VC::Handler errors
         my $e = shift;
+        use Data::Dumper;
+print STDERR "Result Payload would have been: ".Dumper($result)."\n";
         $result = $e->{-text};
         print STDERR "SimpleERROR: $result\n";
         $res->status( '500 ' . $result );
