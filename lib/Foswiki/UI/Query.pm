@@ -240,6 +240,8 @@ sub query {
     else {
         die 'not implemented (' . $query . ')';
     }
+    print STDERR "----------- request_method : ||$request_method||\n";
+    print STDERR "----------- query : ||$query||\n";
 
 #need to test if this topic exists, as Meta->new currently returns an obj, even if the web, or the topic don't exist. totally yuck.
 #TODO: note that if we're PUT-ing and the item does not exist, we're basically POSTing, but to a static URI, not to a collection.
@@ -470,8 +472,28 @@ print STDERR "\n\nPOST: create new topic Meta ("
 
         }
         elsif ( $request_method eq 'DELETE' ) {
-            my $attachment = undef;
+            if ($elementAlias eq 'webs') {
+                ASSERT(Foswiki::Func::webExists($web)) if DEBUG;
+            } elsif ($elementAlias eq 'topic') {
+                ASSERT(Foswiki::Func::topicExists($web, $topic)) if DEBUG;
+               
+            } elsif ($elementAlias eq 'attachments') {
+                ASSERT(Foswiki::Func::attachmentExists($web, $topic, $attachment)) if DEBUG;
+            }else {
+                die 'you cant remove that';
+            }
             $topicObject->removeFromStore( $attachment );
+            
+            if ($elementAlias eq 'webs') {
+                ASSERT(not Foswiki::Func::webExists($web)) if DEBUG;
+            } elsif ($elementAlias eq 'topic') {
+                ASSERT(not Foswiki::Func::topicExists($web, $topic)) if DEBUG;
+               
+            } elsif ($elementAlias eq 'attachments') {
+                ASSERT(not Foswiki::Func::attachmentExists($web, $topic, $attachment)) if DEBUG;
+            }else {
+                die 'you cant remove that';
+            }
             $result = {};
         }
         else {

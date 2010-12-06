@@ -102,7 +102,7 @@ sub callCurl {
       . $requestContent . '\' '
       . $url;
 
-    print STDERR "----\n$curlCommand\n----\n";
+    print STDERR "\n\n----\n$curlCommand\n----\n";
     my $result = `$curlCommand 2>&1`
       ;    # grrrr, aparently they output the header info into stderr
 
@@ -692,6 +692,38 @@ sub test_multiple_attachment_modify {
             'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
         },
         '[{"attachment":"favicon.ico","version":"1","date":"EXTRACTED_FOR_TESTING","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"},{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}]',
+    );
+        $this->runTest(
+            'DELETE',
+            'text/json',
+            '',
+            'Sandbox', 
+            'SomeAttachments',
+            'favicon.ico',
+            'attachments',
+            'json',
+            {
+                HTTP_RESPONSE_STATUS      => '200',
+                HTTP_RESPONSE_STATUS_TEXT => 'OK',
+    #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+#                'Location' => 'http://x61/f/bin/query/Sandbox/SomeAttachments/topic'
+            },
+        );
+    $this->runTest(
+        'GET',
+        'text/json',
+        '', 
+        'Sandbox',  
+        'SomeAttachments',
+        '',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+        },
+        '{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}',
     );
 }
 
