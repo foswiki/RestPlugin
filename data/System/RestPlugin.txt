@@ -37,7 +37,7 @@ Initially supporting JSON encoding, it can be extended to anything - so long as 
 ---++++ Attachments
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
 | =GET=    |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/[{attachmentname}/]attachments[.json]=      |  get attachment resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
-| =POST=   |     no        | =http://x61/bin/query/{Webname}/{TopicName}/attachments[.json]=        |  create a new attachment ('this is essentially 'COPY', so might just be a consistency Alias)     |
+| =POST=   |     no        | =http://x61/bin/query/{Webname}/{TopicName}/attachments[.json]=                         |  create a new attachment - can I just decode the payload and push to UI::Upload?     |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  update a attachment resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
 | =PATCH=  |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  same as PUT?     |
 | =DELETE= |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  delete attachment     |

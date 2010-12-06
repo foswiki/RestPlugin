@@ -134,7 +134,7 @@ sub addToResultHash {
 sub runTest {
     my (
         $this,        $OP,          $sendType,
-        $sendPayload, $web,         $topic,
+        $sendPayload, $web,         $topic, $attachment, 
         $element,     $receiveType, $expectedHash,
         $expectedReplyPayload
     ) = @_;
@@ -143,6 +143,7 @@ sub runTest {
     my @path;
     push(@path, $web) if (defined($web) and ($web ne ''));
     push(@path, $topic) if (defined($topic) and ($topic ne ''));
+    push(@path, $attachment) if (defined($attachment) and ($attachment ne ''));
     push(@path, $element) if (defined($element) and ($element ne ''));
     my $query = '/'.join('/', @path);
 
@@ -201,6 +202,7 @@ sub test_create_web {
             }', 
         '', 
         '',
+        '',
         'webs',
         'json',
         {
@@ -232,6 +234,7 @@ sub test_create_web {
             }', 
         '', 
         '',
+        '',
         'webs',
         'json',
         {
@@ -255,6 +258,7 @@ sub test_create_web {
                 "websummary" : "subweb created by query REST API"
             }', 
         '', 
+        '',
         '',
         'webs',
         'json',
@@ -349,6 +353,7 @@ sub testPATCH {
         '{"_text": "Some text"}',
         'System',
         'WebHome',
+        '',
         'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
@@ -363,6 +368,7 @@ sub testPATCH {
         '{"_text": "Some text"}',
         'Sandbox',
         'TestTopicAUTOINC001',
+        '',
         'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '404',
@@ -379,6 +385,7 @@ sub testPATCH {
         '{"_text": "Some text"}',
         $this->{test_web},
         'Improvement2',
+        '',
         'topic', 'json',
         {
             HTTP_RESPONSE_STATUS => '500',
@@ -399,6 +406,7 @@ sub testPATCH {
         '{"_topic": "ACopyOfImprovement2"}',
         $this->{rest_test_web},
         'Improvement2',
+        '',
         'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '200',
@@ -420,6 +428,7 @@ sub test_attachmentsProjectLogos {
         'text/json',
         '', 'System',
         'ProjectLogos',
+        '',
         'attachments',
         'json',
         {
@@ -428,6 +437,28 @@ sub test_attachmentsProjectLogos {
             'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments',
         },
 '[{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-badge.png","version":"2","date":"1227691956","name":"foswiki-badge.gif","path":"foswiki-badge.png","attr":"","size":"4807","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.gif","version":"2","date":"1227691994","name":"foswiki-logo.gif","path":"foswiki-logo.gif","attr":"","size":"7537","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.xcf","version":"1","date":"1227691956","name":"foswiki-logo.xcf","path":"foswiki-logo.xcf","attr":"","size":"45514","user":"ProjectContributor"}]'
+    );
+}
+
+sub test_attachmentsProjectLogos_favicon_ico {
+    my $this = shift;
+
+    #requesting a list of attachments in the 'container' System.ProjectLogos
+    #/System/ProjectLogos/attachment.json
+    $this->runTest(
+        'GET',
+        'text/json',
+        '', 'System',
+        'ProjectLogos',
+        'favicon.ico',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments[name=\'favicon.ico\']',
+        },
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"}'
     );
 }
 
@@ -440,6 +471,7 @@ sub test_attachmentsWebHome {
         'text/json',
         '', 'System',
         'WebHome',
+        '',
         'attachments',
         'json',
         {
@@ -460,6 +492,7 @@ sub test_attachments_modify {
         '', 
         $this->{test_web}, 
         'SomeAttachments',
+        '',
         'attachments',
         'json',
         {

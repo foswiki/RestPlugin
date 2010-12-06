@@ -154,7 +154,7 @@ sub query {
 
 ##############################
 # begin with the presumption that all queries are the simplified 'http://server/query/System/WebHome/alias.ext' type..
-    my ( $web, $topic, $baseObjectExists );
+    my ( $web, $topic, $attachment, $baseObjectExists );
     if ( $query =~ /^\/?(.*)\/(.*?)$/ ) {
         $web   = $1;
         $topic = $2;
@@ -207,12 +207,26 @@ sub query {
             }
         }
         else {
+            print STDERR "****************($web)($topic)\n";
 
             #attachments are to a topic, so the simple regex above is ok
-            $baseObjectExists =
-              (       Foswiki::Func::webExists($web)
-                  and Foswiki::Func::topicExists( $web, $topic ) );
+            my $webExists = Foswiki::Func::webExists($web);
+            my $topicExists = Foswiki::Func::topicExists( $web, $topic );
+            $baseObjectExists = ( $webExists and $topicExists );
             $query = "'$web.$topic'/$elementAlias";
+            
+            if (not ($webExists) and ($web =~ /^\/?(.*)\/(.*?)$/ )) {
+                $attachment = $topic;
+                $web   = $1;
+                $topic = $2;
+            print STDERR "*******************($web)($topic)($attachment)\n";
+                #perhaps we're requesting Web/Topic/attachmentname/attachment.json..
+                $webExists = Foswiki::Func::webExists($web);
+                $topicExists = Foswiki::Func::topicExists( $web, $topic );
+                my $attachmentExists = Foswiki::Func::attachmentExists($web, $topic, $attachment);
+                $baseObjectExists = ( $webExists and $topicExists and $attachmentExists);
+                $query = "'$web.$topic'/".$elementAlias."[name='$attachment']";
+            }
         }
 
     }
