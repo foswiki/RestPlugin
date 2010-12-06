@@ -40,7 +40,7 @@ Initially supporting JSON encoding, it can be extended to anything - so long as 
 | =POST=   |     no        | =http://x61/bin/query/{Webname}/{TopicName}/attachments[.json]=                         |  create a new attachment - can I just decode the payload and push to UI::Upload?     |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  update a attachment resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
 | =PATCH=  |     yes       | =http://x61/bin/query/{Webname}/{TopicName}[/{attachmentname}]/attachments[.json]=      | update the entire attachment meta array (if the attachment is not specified), if the attachment name is specified, update only the sent data elements for that attachment    |
-| =DELETE= |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  delete attachment     |
+| =DELETE= |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  delete attachment     |
 
 ---++++ unsupported requests
 you cannot make a =topic= or =attachment= element request on the root (eg =http://x61/f/bin/query/topic=), or an =attachment= request on a web.
