@@ -437,7 +437,7 @@ sub testPOST {
     #DELETE it
         $this->assert(Foswiki::Func::topicExists($this->{test_web}, 'Improvement3'));
 
-        my ( $replytext, $hdr ) =
+        ( $replytext, $hdr ) =
           $this->call_UI_query( '/' . $this->{test_web} . '/Improvement3/topic.json', 'DELETE',
             {},
             'BaseUserMapping_333' );
@@ -645,12 +645,15 @@ sub deleteWebs {
         next if ($cleaning and not( Foswiki::Func::webExists($deleteWeb) ));
         $this->assert(Foswiki::Func::webExists($deleteWeb));
 
+print STDERR "\nDELETE($deleteWeb)\n";
+
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/'.$deleteWeb.'/webs.json?copy', 'DELETE',
             {},
             'BaseUserMapping_333' );
+print STDERR "\n  DELETE($deleteWeb) == ".(Foswiki::Func::webExists($deleteWeb)?'exists':'gone')."\n";
 
-        $this->assert( not Foswiki::Func::webExists($deleteWeb) );
+        $this->assert(not(Foswiki::Func::webExists($deleteWeb)));
     }
 }
 

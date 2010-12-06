@@ -472,19 +472,25 @@ print STDERR "\n\nPOST: create new topic Meta ("
 
         }
         elsif ( $request_method eq 'DELETE' ) {
-            #TODO: uniqueness...
+            require Foswiki::UI::Save;
             if ($elementAlias eq 'webs') {
                 ASSERT(Foswiki::Func::webExists($web)) if DEBUG;
-                Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$web);
+                my $trashWeb = $web.time();
+                $trashWeb =~ s/[\/.]/_/g;
+print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb)\n";
+                Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb);
                 ASSERT(not Foswiki::Func::webExists($web)) if DEBUG;
             } elsif ($elementAlias eq 'topic') {
                 ASSERT(Foswiki::Func::topicExists($web, $topic)) if DEBUG;
-                Foswiki::Func::moveTopic($web, $topic, $Foswiki::cfg{TrashWebName}, $topic);
+                my $trashTopic =
+                  Foswiki::UI::Save::expandAUTOINC( $session, $Foswiki::cfg{TrashWebName},
+                    $topic.'AUTOINC0000' );
+                Foswiki::Func::moveTopic($web, $topic, $Foswiki::cfg{TrashWebName}, $trashTopic);
                 ASSERT(not Foswiki::Func::topicExists($web, $topic)) if DEBUG;
               
             } elsif ($elementAlias eq 'attachments') {
                 ASSERT(Foswiki::Func::attachmentExists($web, $topic, $attachment)) if DEBUG;
-                Foswiki::Func::moveAttachment($web, $topic, $attachment, $Foswiki::cfg{TrashWebName}, 'TrashAttament');
+                Foswiki::Func::moveAttachment($web, $topic, $attachment, $Foswiki::cfg{TrashWebName}, 'TrashAttament', time().'_'.$attachment);
                 ASSERT(not Foswiki::Func::attachmentExists($web, $topic, $attachment)) if DEBUG;
             }else {
                 die 'you cant remove that';
