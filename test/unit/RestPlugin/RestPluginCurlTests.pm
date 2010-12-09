@@ -409,31 +409,8 @@ sub testPATCH {
         'topic', 'json',
         {
             HTTP_RESPONSE_STATUS => '500',
-
-#            HTTP_RESPONSE_STATUS_TEXT => 'OK',
-#            'X-Foswiki-Rest-Query'    => '\''.$this->{test_web}.'.Improvement2\'/topic',
-        }
-    );
-
-#TODO: {rest_test_web}  needs to be created using curl - so that the webserver permissions are useable.
-    return;
-
-    #COPY
-    #$this->{rest_test_web}, "Improvement2"
-    $this->runTest(
-        'PATCH',
-        'text/json',
-        '{"_topic": "ACopyOfImprovement2"}',
-        $this->{rest_test_web},
-        'Improvement2',
-        '',
-        'topic', 'json',
-        {
-            HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\''
-              . $this->{rest_test_web}
-              . '.ACopyOfImprovement2\'/topic',
+#            'X-Foswiki-Rest-Query'    => '\''.$this->{test_web}.'.Improvement2\'/topic',
         }
     );
 }

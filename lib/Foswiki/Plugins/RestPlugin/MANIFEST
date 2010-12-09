@@ -5,8 +5,6 @@ lib/Foswiki/UI/Query.pm 0644 UI handler
 bin/query 0644 new cgi script
 lib/Foswiki/Plugins/RestPlugin/Config.spec 0644 Congfig
 
-templates/restpluginscript.tmpl
-
 pub/System/RestPlugin/wikiring-rest.png
 pub/System/RestPlugin/wikiringlogo20x20.png
 pub/System/RestPlugin/restplugin-viewform.png

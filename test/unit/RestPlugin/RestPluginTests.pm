@@ -11,6 +11,10 @@ use Foswiki::Meta      ();
 use Foswiki::Serialise ();
 use JSON               ();
 
+# Set to 1 for debug
+use constant MONITOR_ALL => 0;
+
+
 my $UI_FN;
 my $fatwilly;
 
@@ -58,7 +62,7 @@ sub call_UI_query {
     $cuid = $this->{test_user_login} unless defined($cuid);
 
     my $loginname = Foswiki::Func::wikiToUserName($cuid);
-    print STDERR "=-=- the user running the UI: " . $loginname . "\n";
+    print STDERR "=-=- the user running the UI: " . $loginname . "\n" if MONITOR_ALL;
     $fatwilly = new Foswiki( $loginname, $query );
 
     my ( $text, $result, $stdout, $stderr ) = $this->capture(
@@ -70,8 +74,8 @@ sub call_UI_query {
                 $fatwilly->{request} );
         }
     );
-    print STDERR "SSSSSSSS\n$stderr\nTTTTTTTTTT\n";
-    print "$stdout\nUUUUUUUUUUU\n";
+    print STDERR "SSSSSSSS\n$stderr\nTTTTTTTTTT\n" if MONITOR_ALL;
+    print STDERR "$stdout\nUUUUUUUUUUU\n" if MONITOR_ALL;
 
     $fatwilly->finish();
     $Foswiki::Plugins::SESSION = $sess;
@@ -156,7 +160,7 @@ sub TODOtestGET_webs_doesnotexist {
             my $result = $e->{-text};
 
             #$res->status( '500 ' . $result );
-            print STDERR "******************($result)\n";
+            print STDERR "******************($result)\n" if MONITOR_ALL;
         }
     }
 }
@@ -175,7 +179,7 @@ sub testGET_allwebs {
         my @webs = Foswiki::Func::getListOfWebs( '', '' );
         my @results = map {
             my ( $meta, $text ) = Foswiki::Func::readTopic($_);
-            print STDERR "::::: load($_) == " . $meta->web . "\n";
+            print STDERR "::::: load($_) == " . $meta->web . "\n" if MONITOR_ALL;
             Foswiki::Serialise::convertMeta($meta)
         } @webs;
 
@@ -194,10 +198,10 @@ sub LATERtestGET_NoSuchTopic {
                 'GET', {} );
         }
         finally {
-            print STDERR "hllo";
+            print STDERR "hllo" if MONITOR_ALL;
         }
-        print STDERR "HEADER: $hdr\n";
-        print STDERR "REPLY: $replytext\n";
+        print STDERR "HEADER: $hdr\n" if MONITOR_ALL;
+        print STDERR "REPLY: $replytext\n" if MONITOR_ALL;
 
     }
 }
@@ -217,7 +221,7 @@ sub testPATCH_CompleteTopic {
         Foswiki::Serialise::convertMeta($meta) );
 
 #modify it a little and PUT
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
+#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
     $fromJSON->{FIELD}[0]->{value} = 'Actually, its brilliant!';
     my $sendJSON = JSON::to_json($fromJSON);
     ( $replytext, $hdr ) = $this->call_UI_query(
@@ -261,7 +265,7 @@ sub testPATCH_JustOneField_Topic {
     #modify it a little and PUT
     {
 
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
+#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $partialItem->{FIELD}[0]->{value} = 'Something new, something blue';
         foreach my $key ( keys( %{$partialItem} ) ) {
@@ -270,7 +274,7 @@ sub testPATCH_JustOneField_Topic {
         }
         my $sendJSON = JSON::to_json($partialItem);
 
-        #print STDERR "------------\n".$sendJSON."\n------------\n";
+        #print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -287,7 +291,7 @@ sub testPATCH_JustOneField_Topic {
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-        #print STDERR "-------reply-----\n".$replytext."\n------------\n";
+        #print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -327,7 +331,7 @@ sub testPATCH_JustText_Topic {
     #modify it a little and PUT
     {
 
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
+#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $partialItem->{_text} = 'Something new, something blue';
         foreach my $key ( keys( %{$partialItem} ) ) {
@@ -336,7 +340,7 @@ sub testPATCH_JustText_Topic {
         }
         my $sendJSON = JSON::to_json($partialItem);
 
-        print STDERR "----send--------\n" . $sendJSON . "\n------------\n";
+        print STDERR "----send--------\n" . $sendJSON . "\n------------\n" if MONITOR_ALL;
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -353,7 +357,7 @@ sub testPATCH_JustText_Topic {
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-        #print STDERR "-------reply-----\n".$replytext."\n------------\n";
+        #print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -385,7 +389,7 @@ sub testPOST {
     my ( $replytext, $hdr ) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
-    print STDERR "------($replytext)\n";
+    print STDERR "------($replytext)\n" if MONITOR_ALL;
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
     $this->assert_deep_equals( $fromJSON,
         Foswiki::Serialise::convertMeta($meta) );
@@ -394,7 +398,7 @@ sub testPOST {
     sleep(2);
 
 #modify it a little and POST to a new topic name..
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
+#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
     $fromJSON->{FIELD}[0]->{value} = 'Actually, its brilliant!';
     $fromJSON->{_topic} = 'Improvement3';
     my $sendJSON = JSON::to_json($fromJSON);
@@ -403,7 +407,7 @@ sub testPOST {
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
-    print STDERR "################### $hdr ######################\n";
+    print STDERR "################### $hdr ######################\n" if MONITOR_ALL;
     $hdr =~ /Location: (.*)/;
     my $LocationInHdr = $1;
     $this->assert_str_equals(
@@ -420,7 +424,7 @@ sub testPOST {
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement3/topic.json',
             'GET', {} );
-        print STDERR "------($replytext)\n";
+        print STDERR "------($replytext)\n" if MONITOR_ALL;
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
@@ -456,7 +460,7 @@ sub testPOST_AUTOINC001 {
     my ( $replytext, $hdr ) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
-    print STDERR "------($replytext)\n";
+    print STDERR "------($replytext)\n" if MONITOR_ALL;
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
     $this->assert_deep_equals( $fromJSON,
         Foswiki::Serialise::convertMeta($meta) );
@@ -465,7 +469,7 @@ sub testPOST_AUTOINC001 {
     sleep(2);
 
 #modify it a little and POST to a new topic name..
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n";
+#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
     $fromJSON->{FIELD}[0]->{value} = 'Actually, its brilliant!';
     $fromJSON->{_topic} = 'TestTopicAUTOINC001';
 
@@ -483,7 +487,7 @@ sub testPOST_AUTOINC001 {
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/TestTopic001/topic.json',
             'GET', {} );
-        print STDERR "------($replytext)\n";
+        print STDERR "------($replytext)\n" if MONITOR_ALL;
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
@@ -645,13 +649,13 @@ sub deleteWebs {
         next if ($cleaning and not( Foswiki::Func::webExists($deleteWeb) ));
         $this->assert(Foswiki::Func::webExists($deleteWeb));
 
-print STDERR "\nDELETE($deleteWeb)\n";
+print STDERR "\nDELETE($deleteWeb)\n" if MONITOR_ALL;
 
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/'.$deleteWeb.'/webs.json?copy', 'DELETE',
             {},
             'BaseUserMapping_333' );
-print STDERR "\n  DELETE($deleteWeb) == ".(Foswiki::Func::webExists($deleteWeb)?'exists':'gone')."\n";
+print STDERR "\n  DELETE($deleteWeb) == ".(Foswiki::Func::webExists($deleteWeb)?'exists':'gone')."\n" if MONITOR_ALL;
 
         $this->assert(not(Foswiki::Func::webExists($deleteWeb)));
     }

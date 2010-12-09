@@ -22,6 +22,10 @@ use Time::HiRes ();
 use REST::Utils qw( :all );
 use Error qw( :try );
 
+# Set to 1 for debug
+use constant MONITOR_ALL => 0;
+
+
 #map MIME type to serialiseFunctions
 our %serialiseFunctions = (
     'text/json' => 'Foswiki::Serialise::json',
@@ -110,7 +114,7 @@ sub query {
     }
 
     authenticate($session);
-    print STDERR "after auth\n";
+    print STDERR "after auth\n" if MONITOR_ALL;
 
 #delegate to POSTquery
 #return POSTquery($session, %initialContext) if ($request_method eq 'POST');
@@ -127,7 +131,7 @@ sub query {
         throw Foswiki::EngineException( 400, $err, $res );
     }
     my ( $query, $elementAlias, $url_mediatype ) = ( $1, $2, $3 );
-    print STDERR "---- elementAlias: $elementAlias\n";
+    print STDERR "---- elementAlias: $elementAlias\n" if MONITOR_ALL;
 
     #find the best mediatype
     #a URL specified mediatype will over-ride the request header one..
@@ -211,7 +215,7 @@ sub query {
             #attachments are to a topic, so the simple regex above is ok
             my $webExists = Foswiki::Func::webExists($web);
             my $topicExists = Foswiki::Func::topicExists( $web, $topic );
-            print STDERR "****************($web)($topic)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').")\n";
+            print STDERR "****************($web)($topic)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').")\n" if MONITOR_ALL;
             $baseObjectExists = ( $webExists and $topicExists );
             $query = "'$web.$topic'/$elementAlias";
             
@@ -223,7 +227,7 @@ sub query {
                 $webExists = Foswiki::Func::webExists($web);
                 $topicExists = Foswiki::Func::topicExists( $web, $topic );
                 my $attachmentExists = Foswiki::Func::attachmentExists($web, $topic, $attachment);
-            print STDERR "******************($web)($topic)($attachment)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').", attach:".($attachmentExists?'exists':'unknown').")\n";
+            print STDERR "******************($web)($topic)($attachment)  (web:".($webExists?'exists':'unknown').", topic:".($topicExists?'exists':'unknown').", attach:".($attachmentExists?'exists':'unknown').")\n" if MONITOR_ALL;
                 $baseObjectExists = ( $webExists and $topicExists and $attachmentExists);
                 $query = "'$web.$topic'/".$elementAlias."[name='$attachment']";
             }
@@ -240,8 +244,8 @@ sub query {
     else {
         die 'not implemented (' . $query . ')';
     }
-    print STDERR "----------- request_method : ||$request_method||\n";
-    print STDERR "----------- query : ||$query||\n";
+    print STDERR "----------- request_method : ||$request_method||\n" if MONITOR_ALL;
+    print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
 
 #need to test if this topic exists, as Meta->new currently returns an obj, even if the web, or the topic don't exist. totally yuck.
 #TODO: note that if we're PUT-ing and the item does not exist, we're basically POSTing, but to a static URI, not to a collection.
@@ -279,10 +283,10 @@ sub query {
     my $requestPayload = REST::Utils::get_body($req);
 #untaint randomly :/
 $requestPayload =~ /(.*)/; $requestPayload = $1;
-    print STDERR "----------- request_method : ||$request_method||\n";
-    print STDERR "----------- query : ||$query||\n";
-    print STDERR "----------- requestContentType : ||$requestContentType||\n";
-    print STDERR "----------- requestPayload : ||$requestPayload||\n";
+    print STDERR "----------- request_method : ||$request_method||\n" if MONITOR_ALL;
+    print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
+    print STDERR "----------- requestContentType : ||$requestContentType||\n" if MONITOR_ALL;
+    print STDERR "----------- requestPayload : ||$requestPayload||\n" if MONITOR_ALL;
     if ( ( $request_method ne 'GET' ) and ( $requestPayload eq '' ) ) {
         print STDERR
           "@@@@@@@@@@@@@@@@@@@@ no payload. writing to /tmp/cgi.out\n";
@@ -323,7 +327,7 @@ $requestPayload =~ /(.*)/; $requestPayload = $1;
                     my $querytxt   = $query;
                     $querytxt =~ s/(topic)$/hash/;
                     print STDERR
-"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n" if MONITOR_ALL;
                     my $node = $evalParser->parse($querytxt);
 
                     $result = $node->evaluate(
@@ -342,7 +346,7 @@ $requestPayload =~ /(.*)/; $requestPayload = $1;
                 my @results = map {
                     my $m =
                       Foswiki::Meta->load( $Foswiki::Plugins::SESSION, $_ );
-                    print STDERR "::::: load($_) == " . $m->web . "\n";
+                    print STDERR "::::: load($_) == " . $m->web . "\n" if MONITOR_ALL;
                     $m
                 } @webs;
                 $result = \@results;
@@ -359,7 +363,7 @@ $requestPayload =~ /(.*)/; $requestPayload = $1;
             if ($elementAlias eq 'topic') {
                 copyFrom( $topicObject, $value );    #copy meta..
     
-    #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n";
+    #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 $topicObject->text( $value->{_text} )
                   if ( defined( $value->{_text} ) );
                 $topicObject->save();
@@ -369,13 +373,13 @@ $requestPayload =~ /(.*)/; $requestPayload = $1;
                     my $hash = {"FILEATTACHMENT" => $value};
                     copyFrom( $topicObject, $hash );    #copy meta..
         
-        #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n";
+        #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 } else {
                     my $info = $topicObject->getAttachmentRevisionInfo($attachment);
 use Data::Dumper;
-print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n";
+print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n" if MONITOR_ALL;
                     @{$info}{keys(%$value)} = values(%$value); #over-ride the server version with whats in the payload
-print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n";
+print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n" if MONITOR_ALL;
                     #TODO: shoudl make sure there's no stream or file set
 #                    delete $info->{stream};
 #                    delete $info->{file};
@@ -477,7 +481,7 @@ print STDERR "\n\nPOST: create new topic Meta ("
                 ASSERT(Foswiki::Func::webExists($web)) if DEBUG;
                 my $trashWeb = $web.time();
                 $trashWeb =~ s/[\/.]/_/g;
-print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb)\n";
+print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb)\n" if MONITOR_ALL;
                 Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb);
                 ASSERT(not Foswiki::Func::webExists($web)) if DEBUG;
             } elsif ($elementAlias eq 'topic') {
@@ -506,11 +510,11 @@ print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$tra
 
         #might be an array of Meta's
         #TODO: should the reply _always_ be an array?
-        #print STDERR "------------------ ref(result): " . ref($result) . "\n";
+        #print STDERR "------------------ ref(result): " . ref($result) . "\n" if MONITOR_ALL;
         if ( ref($result) eq 'ARRAY' ) {
             for ( my $i = 0 ; $i < scalar(@$result) ; $i++ ) {
 
-#print STDERR "------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n";
+#print STDERR "------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n" if MONITOR_ALL;
                 if ( ref( $result->[$i] ) eq 'Foswiki::Meta' ) {
                     $result->[$i] =
                       Foswiki::Serialise::convertMeta( $result->[$i] );
@@ -542,6 +546,14 @@ print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$tra
         };
         map { $res->pushHeader( 'X-Foswiki-REST-' . $_, $header_info->{$_} ) }
           keys(%$header_info);
+          
+        use Scalar::Util qw(blessed reftype);
+        if (blessed($result)) {
+print STDERR "WARNING: result is a blessed object\n" if MONITOR_ALL;
+ASSERT(not defined(blessed($result)));
+        }
+
+          
         $result =
           Foswiki::Serialise::serialise( $session, $result,
             mapMimeType($responseContentType) );
@@ -551,9 +563,9 @@ print STDERR " Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$tra
         #ouchie, VC::Handler errors
         my $e = shift;
         use Data::Dumper;
-print STDERR "Result Payload would have been: ".Dumper($result)."\n";
+print STDERR "Result Payload would have been: ".Dumper($result)."\n" if MONITOR_ALL;
         $result = $e->{-text};
-        print STDERR "SimpleERROR: $result\n";
+        print STDERR "SimpleERROR: $result\n" if MONITOR_ALL;
         $res->status( '500 ' . $result );
     }
     catch Foswiki::Infix::Error with {
@@ -564,7 +576,7 @@ print STDERR "Result Payload would have been: ".Dumper($result)."\n";
     finally {};
 
     #these will be processed and selected..
-    print STDERR "--------result ($result)\n";
+    print STDERR "--------result ($result)\n" if MONITOR_ALL;
 
     _writeCompletePage( $session, $result, 'view', $responseContentType );
 }
@@ -585,7 +597,7 @@ sub getResourceURI {
     my $uri = Foswiki::Func::getScriptUrl( $web, $topic, 'query' )
       . "/$elementAlias";
     $uri =~ s/\/ZZyZZyyyayyayyaSven//;  #it seems that getScriptUrl doesn't like $topic=undef
-print STDERR "   getResourceURI -> $uri\n";
+print STDERR "   getResourceURI -> $uri\n" if MONITOR_ALL;
     return $uri;
 }
 
@@ -669,7 +681,7 @@ sub copyFrom {
                 push( @data, \%datum );
             }
         }
-        print STDERR "--------------actually modifying $type..\n";
+        print STDERR "--------------actually modifying $type..\n" if MONITOR_ALL;
         $meta->putAll( $type, @data );
     }
     else {
