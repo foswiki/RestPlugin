@@ -21,36 +21,36 @@ sub verify_SeleniumRc_config {
         )
     );
     $this->login();
-print STDERR "---------(".$this->selenium->get_body_text().")\n";
+    print STDERR "---------(" . $this->selenium->get_body_text() . ")\n";
 
 }
 
 sub verify_SeleniumRc_ok_Main_WebHome_topic_perl {
+
     #fails as Selenium seem to presume html
     my $this = shift;
     eval {
         $this->selenium->open_ok(
-            Foswiki::Func::getScriptUrl(
-                'Main', 'WebHome', 'query'
-            ).'/topic.perl'
-        );
+            Foswiki::Func::getScriptUrl( 'Main', 'WebHome', 'query' )
+              . '/topic.perl' );
     };
-print STDERR "---------(".$this->selenium->get_body_text().")\n";
+    print STDERR "---------(" . $this->selenium->get_body_text() . ")\n";
+
     #$this->assert_matches( "^\nopen, ", $@, "Expected an exception" );
 }
 
 sub verify_SeleniumRc_ok_Main_WebHome_topic_json {
+
     #fails as Selenium seem to presume html
     my $this = shift;
     eval {
         $this->selenium->open_ok(
-            Foswiki::Func::getScriptUrl(
-                'Main', 'WebHome', 'query'
-            ).'/topic.json'
-        );
-sleep(30);
+            Foswiki::Func::getScriptUrl( 'Main', 'WebHome', 'query' )
+              . '/topic.json' );
+        sleep(30);
     };
-print STDERR "---------(".$this->selenium->get_body_text().")\n";
+    print STDERR "---------(" . $this->selenium->get_body_text() . ")\n";
+
     #$this->assert_matches( "^\nopen, ", $@, "Expected an exception" );
 }
 

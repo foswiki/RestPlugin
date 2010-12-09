@@ -10,7 +10,6 @@ use Foswiki::Serialise ();
 use JSON               ();
 use File::Path qw(mkpath);
 
-
 sub new {
     my $self = shift()->SUPER::new(@_);
     return $self;
@@ -68,10 +67,14 @@ typically, a spade made with a thorny handle is functional, but not ideal.
 %META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%
 "
     );
-    my $webData = Foswiki::Func::getDataDir().'/'.$this->{test_web};
-    my $webPub = Foswiki::Func::getPubDir().'/'.$this->{test_web}.'/SomeAttachments/';
-    my $attachment = $webPub.'favicon.ico';
-    print STDERR "chmod -R 777 $webData; touch $attachment returned: ".`mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment`;
+    my $webData = Foswiki::Func::getDataDir() . '/' . $this->{test_web};
+    my $webPub =
+        Foswiki::Func::getPubDir() . '/'
+      . $this->{test_web}
+      . '/SomeAttachments/';
+    my $attachment = $webPub . 'favicon.ico';
+    print STDERR "chmod -R 777 $webData; touch $attachment returned: "
+      . `mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment`;
 
 #TODO: implementme - tbh, we need something simple in Func to attache existat files..
 #    $this->addAttachmentsToTopic( $this->{test_web}, 'SomeAttachments',
@@ -86,9 +89,10 @@ sub callCurl {
     my $url                = shift;
     my $login              = shift;
     my $password           = shift;
-    
+
     my $authOption = '';
-    $authOption = " -u $login:$password " if (defined($login) and defined($password));
+    $authOption = " -u $login:$password "
+      if ( defined($login) and defined($password) );
 
 #curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something new again"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json
 #curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something new again"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json
@@ -124,6 +128,7 @@ s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{}]) (.*)(\n)/addToResultHash($1, $2, $3, 
 
     return ( $result, $data );
 }
+
 sub addToResultHash {
     my ( $timestamp, $type, $text, $hash ) = @_;
 
@@ -146,19 +151,21 @@ sub addToResultHash {
 
 sub runTest {
     my (
-        $this,        $OP,          $sendType,
-        $sendPayload, $web,         $topic, $attachment, 
-        $element,     $receiveType, $expectedHash,
-        $expectedReplyPayload, $login, $password
+        $this,         $OP,                   $sendType,
+        $sendPayload,  $web,                  $topic,
+        $attachment,   $element,              $receiveType,
+        $expectedHash, $expectedReplyPayload, $login,
+        $password
     ) = @_;
 
     #my $query = '/' . $web . '/' . $topic . '/' . $element;
     my @path;
-    push(@path, $web) if (defined($web) and ($web ne ''));
-    push(@path, $topic) if (defined($topic) and ($topic ne ''));
-    push(@path, $attachment) if (defined($attachment) and ($attachment ne ''));
-    push(@path, $element) if (defined($element) and ($element ne ''));
-    my $query = '/'.join('/', @path);
+    push( @path, $web )   if ( defined($web)   and ( $web   ne '' ) );
+    push( @path, $topic ) if ( defined($topic) and ( $topic ne '' ) );
+    push( @path, $attachment )
+      if ( defined($attachment) and ( $attachment ne '' ) );
+    push( @path, $element ) if ( defined($element) and ( $element ne '' ) );
+    my $query = '/' . join( '/', @path );
 
     my ( $replytext, $extraHash ) = $this->callCurl(
         $OP,
@@ -167,25 +174,30 @@ sub runTest {
         Foswiki::Func::getScriptUrl( undef, undef, 'query' ) 
           . $query . '.'
           . $receiveType,
-        $login, $password
+        $login,
+        $password
     );
 
     foreach my $key ( sort keys(%$expectedHash) ) {
+
         #if scalar..
         $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
     }
 
-#    $this->assert_matches( qr/^(topic|attachments)$/, $element,
-#        'only topic element implemented below' );
+    #    $this->assert_matches( qr/^(topic|attachments)$/, $element,
+    #        'only topic element implemented below' );
     $this->assert_equals( 'json', $receiveType, 'only JSON implemented below' );
 
     if ( defined($expectedReplyPayload) ) {
-        
-$expectedReplyPayload =~ s/date=\\"(.*?)\\"/date=\\"EXTRACTED_FOR_TESTING\\"/g;
-$expectedReplyPayload =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
-#"date":1291604486,
-$replytext =~ s/date=\\"(.*?)\\"/date=\\"EXTRACTED_FOR_TESTING\\"/g;
-$replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
+
+        $expectedReplyPayload =~
+          s/date=\\"(.*?)\\"/date=\\"EXTRACTED_FOR_TESTING\\"/g;
+        $expectedReplyPayload =~
+          s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
+
+        #"date":1291604486,
+        $replytext =~ s/date=\\"(.*?)\\"/date=\\"EXTRACTED_FOR_TESTING\\"/g;
+        $replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
 
         print STDERR "\njson expected:\n";
         print STDERR $expectedReplyPayload;
@@ -208,25 +220,22 @@ $replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
 
 sub test_create_web_noauth {
     my $this = shift;
-    
+
     my $newWeb = 'RestPluginCurlWeb';
     $this->runTest(
         'POST',
         'text/json',
         '{
                 "baseweb"    : "_default",
-                "newweb"     : "'.$newWeb.'",
+                "newweb"     : "' . $newWeb . '",
                 "webbgcolor" : "#22ff22",
                 "websummary" : "another subweb created by query REST AP"
-            }', 
-        '', 
-        '',
-        '',
-        'webs',
-        'json',
+            }',
+        '', '', '', 'webs', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
+
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/webs',
         },
@@ -234,11 +243,11 @@ sub test_create_web_noauth {
     );
 
     $this->assert( not Foswiki::Func::webExists($newWeb) );
-#    $this->assert_equals( '#22ff22',
-#        Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
-#    $this->assert_equals( 'web created by query REST API',
-#        Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
 
+    #    $this->assert_equals( '#22ff22',
+    #        Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+    #    $this->assert_equals( 'web created by query REST API',
+    #        Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
 
     $newWeb = 'Sandbox/Subweb';
     $this->runTest(
@@ -246,24 +255,21 @@ sub test_create_web_noauth {
         'text/json',
         '{
                 "baseweb"    : "_default",
-                "newweb"     : "'.$newWeb.'",
+                "newweb"     : "' . $newWeb . '",
                 "webbgcolor" : "#22ff22",
                 "websummary" : "subweb created by query REST API"
-            }', 
-        '', 
-        '',
-        '',
-        'webs',
-        'json',
+            }',
+        '', '', '', 'webs', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
+
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
         },
         undef
     );
-    
+
     #this should fail..
     $newWeb = 'NotThereRestPluginCurlWeb/Subweb';
     $this->runTest(
@@ -271,18 +277,15 @@ sub test_create_web_noauth {
         'text/json',
         '{
                 "baseweb"    : "_default",
-                "newweb"     : "'.$newWeb.'",
+                "newweb"     : "' . $newWeb . '",
                 "webbgcolor" : "#22ff22",
                 "websummary" : "subweb created by query REST API"
-            }', 
-        '', 
-        '',
-        '',
-        'webs',
-        'json',
+            }',
+        '', '', '', 'webs', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
+
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
         },
@@ -293,17 +296,17 @@ sub test_create_web_noauth {
 sub testGET_topiclist {
     my $this = shift;
 
-    {#(list of topics...)
-        #/Main/topic.json
+    {    #(list of topics...)
+            #/Main/topic.json
         my ( $replytext, $extraHash ) = $this->callCurl( 'GET', 'text/json', '',
             Foswiki::Func::getScriptUrl( undef, undef, 'query' )
               . '/Main/topic.json' );
 
         #print STDERR $replytext;
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        my @topicList = map { {'_topic'=> $_} } Foswiki::Func::getTopicList('Main');
-        $this->assert_deep_equals( $fromJSON,
-            \@topicList);
+        my @topicList =
+          map { { '_topic' => $_ } } Foswiki::Func::getTopicList('Main');
+        $this->assert_deep_equals( $fromJSON, \@topicList );
         $this->assert_equals( '200', $extraHash->{HTTP_RESPONSE_STATUS} );
         $this->assert_equals( 'OK',  $extraHash->{HTTP_RESPONSE_STATUS_TEXT} );
         $this->assert_equals( "'Main'/topic",
@@ -317,6 +320,7 @@ sub testGET_topiclist {
 sub testGET {
     my $this = shift;
     {
+
         #/Main/WebHome/topic.json
         my ( $replytext, $extraHash ) = $this->callCurl( 'GET', 'text/json', '',
             Foswiki::Func::getScriptUrl( undef, undef, 'query' )
@@ -371,8 +375,7 @@ sub testPATCH {
         '{"_text": "Some text"}',
         'System',
         'WebHome',
-        '',
-        'topic', 'json',
+        '', 'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
@@ -386,8 +389,7 @@ sub testPATCH {
         '{"_text": "Some text"}',
         'Sandbox',
         'TestTopicAUTOINC001',
-        '',
-        'topic', 'json',
+        '', 'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '404',
             HTTP_RESPONSE_STATUS_TEXT => 'Not Found',
@@ -403,11 +405,11 @@ sub testPATCH {
         '{"_text": "Some text"}',
         $this->{test_web},
         'Improvement2',
-        '',
-        'topic', 'json',
+        '', 'topic', 'json',
         {
-            HTTP_RESPONSE_STATUS => '500',
+            HTTP_RESPONSE_STATUS      => '500',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
+
 #            'X-Foswiki-Rest-Query'    => '\''.$this->{test_web}.'.Improvement2\'/topic',
         }
     );
@@ -451,10 +453,12 @@ sub test_attachmentsProjectLogos_favicon_ico {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments[name=\'favicon.ico\']',
+            'X-Foswiki-Rest-Query' =>
+              '\'System.ProjectLogos\'/attachments[name=\'favicon.ico\']',
         },
 '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"}'
     );
+
     #lets fail to modify.
     $this->runTest(
         'PATCH',
@@ -468,9 +472,10 @@ sub test_attachmentsProjectLogos_favicon_ico {
         {
             HTTP_RESPONSE_STATUS      => '401',
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
+
 #            'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments[name=\'favicon.ico\']',
         },
-        undef   #its an error, not a payload
+        undef    #its an error, not a payload
     );
 }
 
@@ -494,37 +499,40 @@ sub test_attachmentsWebHome {
         ''
     );
 }
+
 sub test_attachment_modify {
     my $this = shift;
 
     $this->runTest(
         'POST',
         'text/json',
-        '{"_topic":"SomeAttachments", "_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n"}',
-        'Sandbox', 
-        '',
-        '',
-        'topic',
-        'json',
+'{"_topic":"SomeAttachments", "_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n"}',
+        'Sandbox',
+        '', '', 'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '201',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-            'Location' => Foswiki::Func::getScriptUrl('Sandbox', 'SomeAttachments', 'query') . '/topic'
-        },
-        '{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"reprev\" date=\"1291604133\" format=\"1.1\" reprev=\"1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":1291604133,"version":"1","reprev":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"reprev","format":1.1,"rev":"1"}],"_indices":{"TOPICINFO":{}},"_topic":"SomeAttachments"}',
-    );
-#    my $webData = Foswiki::Func::getDataDir().'/sandbox;
-    my $webPub = Foswiki::Func::getPubDir().'/Sandbox/SomeAttachments/';
-    my $attachment = $webPub.'favicon.ico';
-    print STDERR "touch $attachment returned: ".`mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment`;
 
+#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'Location' =>
+              Foswiki::Func::getScriptUrl( 'Sandbox', 'SomeAttachments',
+                'query' )
+              . '/topic'
+        },
+'{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"reprev\" date=\"1291604133\" format=\"1.1\" reprev=\"1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":1291604133,"version":"1","reprev":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"reprev","format":1.1,"rev":"1"}],"_indices":{"TOPICINFO":{}},"_topic":"SomeAttachments"}',
+    );
+
+    #    my $webData = Foswiki::Func::getDataDir().'/sandbox;
+    my $webPub     = Foswiki::Func::getPubDir() . '/Sandbox/SomeAttachments/';
+    my $attachment = $webPub . 'favicon.ico';
+    print STDERR "touch $attachment returned: "
+      . `mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment`;
 
     $this->runTest(
         'GET',
         'text/json',
-        '', 
-        'Sandbox', 
+        '',
+        'Sandbox',
         'SomeAttachments',
         '',
         'attachments',
@@ -532,15 +540,15 @@ sub test_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'X-Foswiki-Rest-Query' => '\'Sandbox.SomeAttachments\'/attachments',
         },
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"}',
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"}',
     );
     $this->runTest(
         'PATCH',
         'text/json',
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
-        'Sandbox', 
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
+        'Sandbox',
         'SomeAttachments',
         'favicon.ico',
         'attachments',
@@ -548,15 +556,16 @@ sub test_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments[name=\'favicon.ico\']',
+            'X-Foswiki-Rest-Query' =>
+              '\'Sandbox.SomeAttachments\'/attachments[name=\'favicon.ico\']',
         },
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
     );
     $this->runTest(
         'GET',
         'text/json',
-        '', 
-        'Sandbox',  
+        '',
+        'Sandbox',
         'SomeAttachments',
         '',
         'attachments',
@@ -564,66 +573,66 @@ sub test_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'X-Foswiki-Rest-Query' => '\'Sandbox.SomeAttachments\'/attachments',
         },
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
     );
 }
 
-
 sub test_multiple_attachment_modify {
     my $this = shift;
-    
-  
-    if (Foswiki::Func::topicExists('Sandbox', 'SomeAttachments')) {
+
+    if ( Foswiki::Func::topicExists( 'Sandbox', 'SomeAttachments' ) ) {
+
         #delete..
         $this->runTest(
             'DELETE',
             'text/json',
             '',
-            'Sandbox', 
+            'Sandbox',
             'SomeAttachments',
-            '',
-            'topic',
-            'json',
+            '', 'topic', 'json',
             {
                 HTTP_RESPONSE_STATUS      => '200',
                 HTTP_RESPONSE_STATUS_TEXT => 'OK',
-    #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+
+#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
 #                'Location' => Foswiki::Func::getScriptUrl( undef, undef, 'query' ).'/Sandbox/SomeAttachments/topic'
             },
         );
     }
-    
+
     $this->runTest(
         'POST',
         'text/json',
-        '{"_topic":"SomeAttachments", "_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"1227691956\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n"}',
-        'Sandbox', 
-        '',
-        '',
-        'topic',
-        'json',
+'{"_topic":"SomeAttachments", "_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"1227691956\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n"}',
+        'Sandbox',
+        '', '', 'topic', 'json',
         {
             HTTP_RESPONSE_STATUS      => '201',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-            'Location' => Foswiki::Func::getScriptUrl('Sandbox', 'SomeAttachments', 'query') . '/topic'
-        },
-        '{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" format=\"1.1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":"EXTRACTED_FOR_TESTING","version":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"","format":1.1,"rev":"1"}],"_indices":{"TOPICINFO":{}},"_topic":"SomeAttachments"}'
-    );
-#    my $webData = Foswiki::Func::getDataDir().'/sandbox;
-    my $webPub = Foswiki::Func::getPubDir().'/Sandbox/SomeAttachments/';
-    my $attachment = $webPub.'favicon.ico';
-    my $attachment2 = $webPub.'image.png';
-    print STDERR "touch $attachment returned: ".`mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment; touch $attachment2 ; chmod 777 $attachment2`;
 
+#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'Location' =>
+              Foswiki::Func::getScriptUrl( 'Sandbox', 'SomeAttachments',
+                'query' )
+              . '/topic'
+        },
+'{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" format=\"1.1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":"EXTRACTED_FOR_TESTING","version":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"","format":1.1,"rev":"1"}],"_indices":{"TOPICINFO":{}},"_topic":"SomeAttachments"}'
+    );
+
+    #    my $webData = Foswiki::Func::getDataDir().'/sandbox;
+    my $webPub      = Foswiki::Func::getPubDir() . '/Sandbox/SomeAttachments/';
+    my $attachment  = $webPub . 'favicon.ico';
+    my $attachment2 = $webPub . 'image.png';
+    print STDERR "touch $attachment returned: "
+      . `mkdir -p $webPub ; chmod 777 $webPub; touch $attachment ; chmod 777 $attachment; touch $attachment2 ; chmod 777 $attachment2`;
 
     $this->runTest(
         'GET',
         'text/json',
-        '', 
-        'Sandbox', 
+        '',
+        'Sandbox',
         'SomeAttachments',
         '',
         'attachments',
@@ -631,15 +640,15 @@ sub test_multiple_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'X-Foswiki-Rest-Query' => '\'Sandbox.SomeAttachments\'/attachments',
         },
-        '[{"attachment":"favicon.ico","version":"1","date":"EXTRACTED_FOR_TESTING","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"},{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}]',
+'[{"attachment":"favicon.ico","version":"1","date":"EXTRACTED_FOR_TESTING","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"},{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}]',
     );
     $this->runTest(
         'PATCH',
         'text/json',
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
-        'Sandbox', 
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
+        'Sandbox',
         'SomeAttachments',
         'favicon.ico',
         'attachments',
@@ -647,15 +656,16 @@ sub test_multiple_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments[name=\'favicon.ico\']',
+            'X-Foswiki-Rest-Query' =>
+              '\'Sandbox.SomeAttachments\'/attachments[name=\'favicon.ico\']',
         },
-        '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
+'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
     );
     $this->runTest(
         'GET',
         'text/json',
-        '', 
-        'Sandbox',  
+        '',
+        'Sandbox',
         'SomeAttachments',
         '',
         'attachments',
@@ -663,31 +673,32 @@ sub test_multiple_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'X-Foswiki-Rest-Query' => '\'Sandbox.SomeAttachments\'/attachments',
         },
-        '[{"attachment":"favicon.ico","version":"1","date":"EXTRACTED_FOR_TESTING","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"},{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}]',
+'[{"attachment":"favicon.ico","version":"1","date":"EXTRACTED_FOR_TESTING","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"},{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}]',
     );
-        $this->runTest(
-            'DELETE',
-            'text/json',
-            '',
-            'Sandbox', 
-            'SomeAttachments',
-            'favicon.ico',
-            'attachments',
-            'json',
-            {
-                HTTP_RESPONSE_STATUS      => '200',
-                HTTP_RESPONSE_STATUS_TEXT => 'OK',
-    #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+    $this->runTest(
+        'DELETE',
+        'text/json',
+        '',
+        'Sandbox',
+        'SomeAttachments',
+        'favicon.ico',
+        'attachments',
+        'json',
+        {
+            HTTP_RESPONSE_STATUS      => '200',
+            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+
+#            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
 #                'Location' => Foswiki::Func::getScriptUrl( undef, undef, 'query' ).'/Sandbox/SomeAttachments/topic'
-            },
-        );
+        },
+    );
     $this->runTest(
         'GET',
         'text/json',
-        '', 
-        'Sandbox',  
+        '',
+        'Sandbox',
         'SomeAttachments',
         '',
         'attachments',
@@ -695,11 +706,10 @@ sub test_multiple_attachment_modify {
         {
             HTTP_RESPONSE_STATUS      => '200',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
-            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
+            'X-Foswiki-Rest-Query' => '\'Sandbox.SomeAttachments\'/attachments',
         },
-        '{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}',
+'{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}',
     );
 }
-
 
 1;

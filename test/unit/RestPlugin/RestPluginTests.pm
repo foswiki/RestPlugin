@@ -14,7 +14,6 @@ use JSON               ();
 # Set to 1 for debug
 use constant MONITOR_ALL => 0;
 
-
 my $UI_FN;
 my $fatwilly;
 
@@ -62,7 +61,8 @@ sub call_UI_query {
     $cuid = $this->{test_user_login} unless defined($cuid);
 
     my $loginname = Foswiki::Func::wikiToUserName($cuid);
-    print STDERR "=-=- the user running the UI: " . $loginname . "\n" if MONITOR_ALL;
+    print STDERR "=-=- the user running the UI: " . $loginname . "\n"
+      if MONITOR_ALL;
     $fatwilly = new Foswiki( $loginname, $query );
 
     my ( $text, $result, $stdout, $stderr ) = $this->capture(
@@ -75,7 +75,7 @@ sub call_UI_query {
         }
     );
     print STDERR "SSSSSSSS\n$stderr\nTTTTTTTTTT\n" if MONITOR_ALL;
-    print STDERR "$stdout\nUUUUUUUUUUU\n" if MONITOR_ALL;
+    print STDERR "$stdout\nUUUUUUUUUUU\n"          if MONITOR_ALL;
 
     $fatwilly->finish();
     $Foswiki::Plugins::SESSION = $sess;
@@ -179,7 +179,8 @@ sub testGET_allwebs {
         my @webs = Foswiki::Func::getListOfWebs( '', '' );
         my @results = map {
             my ( $meta, $text ) = Foswiki::Func::readTopic($_);
-            print STDERR "::::: load($_) == " . $meta->web . "\n" if MONITOR_ALL;
+            print STDERR "::::: load($_) == " . $meta->web . "\n"
+              if MONITOR_ALL;
             Foswiki::Serialise::convertMeta($meta)
         } @webs;
 
@@ -200,7 +201,7 @@ sub LATERtestGET_NoSuchTopic {
         finally {
             print STDERR "hllo" if MONITOR_ALL;
         }
-        print STDERR "HEADER: $hdr\n" if MONITOR_ALL;
+        print STDERR "HEADER: $hdr\n"      if MONITOR_ALL;
         print STDERR "REPLY: $replytext\n" if MONITOR_ALL;
 
     }
@@ -274,7 +275,7 @@ sub testPATCH_JustOneField_Topic {
         }
         my $sendJSON = JSON::to_json($partialItem);
 
-        #print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
+     #print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -291,7 +292,7 @@ sub testPATCH_JustOneField_Topic {
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-        #print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+#print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -340,7 +341,8 @@ sub testPATCH_JustText_Topic {
         }
         my $sendJSON = JSON::to_json($partialItem);
 
-        print STDERR "----send--------\n" . $sendJSON . "\n------------\n" if MONITOR_ALL;
+        print STDERR "----send--------\n" . $sendJSON . "\n------------\n"
+          if MONITOR_ALL;
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -357,7 +359,7 @@ sub testPATCH_JustText_Topic {
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-        #print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+#print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -407,7 +409,8 @@ sub testPOST {
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
-    print STDERR "################### $hdr ######################\n" if MONITOR_ALL;
+    print STDERR "################### $hdr ######################\n"
+      if MONITOR_ALL;
     $hdr =~ /Location: (.*)/;
     my $LocationInHdr = $1;
     $this->assert_str_equals(
@@ -438,15 +441,17 @@ sub testPOST {
             $fromJSON->{TOPICINFO}[0]->{date}
         );
     }
+
     #DELETE it
-        $this->assert(Foswiki::Func::topicExists($this->{test_web}, 'Improvement3'));
+    $this->assert(
+        Foswiki::Func::topicExists( $this->{test_web}, 'Improvement3' ) );
 
-        ( $replytext, $hdr ) =
-          $this->call_UI_query( '/' . $this->{test_web} . '/Improvement3/topic.json', 'DELETE',
-            {},
-            'BaseUserMapping_333' );
+    ( $replytext, $hdr ) = $this->call_UI_query(
+        '/' . $this->{test_web} . '/Improvement3/topic.json',
+        'DELETE', {}, 'BaseUserMapping_333' );
 
-        $this->assert( not Foswiki::Func::topicExists($this->{test_web}, 'Improvement3') );
+    $this->assert(
+        not Foswiki::Func::topicExists( $this->{test_web}, 'Improvement3' ) );
 
 }
 
@@ -521,7 +526,7 @@ sub test_copy_topic {
             )
         );
         my $sendJSON = JSON::to_json($fromJSON);
-        
+
         sleep(1);
 
         #POST to the web..
@@ -536,28 +541,35 @@ sub test_copy_topic {
         );
         my ( $meta, $text ) =
           Foswiki::Func::readTopic( $this->{test_web}, 'CopyOfimprovement2' );
-          
+
         #amend $fromJSON's time&author
         $sendJSON =~ s/BaseUserMapping_666/scum/g;
-        $sendJSON =~ s/$fromJSON->{TOPICINFO}[0]->{date}/$meta->{TOPICINFO}[0]->{date}/g;
+        $sendJSON =~
+          s/$fromJSON->{TOPICINFO}[0]->{date}/$meta->{TOPICINFO}[0]->{date}/g;
         $this->assert_deep_equals( Foswiki::Serialise::convertMeta($meta),
-            JSON::from_json($sendJSON, { allow_nonref => 1 }) );
+            JSON::from_json( $sendJSON, { allow_nonref => 1 } ) );
     }
 }
 
 sub test_create_web {
     my $this = shift;
 
-#TODO: move to 'clean' processor
-    $this->deleteWebs(1, ($this->{test_web} . 'REST', 'Sandbox/' . $this->{test_web} . 'REST', 'Sandbox/'.$this->{test_web} . 'Again'));
+    #TODO: move to 'clean' processor
+    $this->deleteWebs(
+        1,
+        (
+            $this->{test_web} . 'REST',
+            'Sandbox/' . $this->{test_web} . 'REST',
+            'Sandbox/' . $this->{test_web} . 'Again'
+        )
+    );
 
-
-my @websToDelete;
+    my @websToDelete;
 
     #TODO: make sure the Location and other Headers are correct..
     {
         my $newWeb = $this->{test_web} . 'REST';
-        push(@websToDelete, $newWeb);
+        push( @websToDelete, $newWeb );
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -584,7 +596,7 @@ my @websToDelete;
 
     {
         my $newWeb = 'Sandbox/' . $this->{test_web} . 'REST';
-        push(@websToDelete, $newWeb);
+        push( @websToDelete, $newWeb );
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -611,7 +623,7 @@ my @websToDelete;
     {    #this one the newWeb should become a subweb of the uri web..
         my $nestedWeb = $this->{test_web} . 'Again';
         my $newWeb    = 'Sandbox/' . $nestedWeb;
-        push(@websToDelete, $newWeb);
+        push( @websToDelete, $newWeb );
         $this->assert( not Foswiki::Func::webExists($newWeb) );
 
         #create  web using _default
@@ -635,29 +647,31 @@ my @websToDelete;
         $this->assert_equals( 'another subweb created by query REST API',
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
-    $this->deleteWebs(undef, @websToDelete);
+    $this->deleteWebs( undef, @websToDelete );
 }
 
 sub deleteWebs {
-    my $this = shift;
-    my $cleaning = shift;
+    my $this         = shift;
+    my $cleaning     = shift;
     my @websToDelete = @_;
-    #delete all webs we just made.. (again, needs to use the REST API so that the permissions are ok.)
-    foreach my $deleteWeb (@websToDelete)
-    {
-        #if we're cleaning, we don't care if the web exists or not, we just want to make sure its gone before we start the test
-        next if ($cleaning and not( Foswiki::Func::webExists($deleteWeb) ));
-        $this->assert(Foswiki::Func::webExists($deleteWeb));
 
-print STDERR "\nDELETE($deleteWeb)\n" if MONITOR_ALL;
+#delete all webs we just made.. (again, needs to use the REST API so that the permissions are ok.)
+    foreach my $deleteWeb (@websToDelete) {
+
+#if we're cleaning, we don't care if the web exists or not, we just want to make sure its gone before we start the test
+        next if ( $cleaning and not( Foswiki::Func::webExists($deleteWeb) ) );
+        $this->assert( Foswiki::Func::webExists($deleteWeb) );
+
+        print STDERR "\nDELETE($deleteWeb)\n" if MONITOR_ALL;
 
         my ( $replytext, $hdr ) =
-          $this->call_UI_query( '/'.$deleteWeb.'/webs.json?copy', 'DELETE',
-            {},
-            'BaseUserMapping_333' );
-print STDERR "\n  DELETE($deleteWeb) == ".(Foswiki::Func::webExists($deleteWeb)?'exists':'gone')."\n" if MONITOR_ALL;
+          $this->call_UI_query( '/' . $deleteWeb . '/webs.json?copy',
+            'DELETE', {}, 'BaseUserMapping_333' );
+        print STDERR "\n  DELETE($deleteWeb) == "
+          . ( Foswiki::Func::webExists($deleteWeb) ? 'exists' : 'gone' ) . "\n"
+          if MONITOR_ALL;
 
-        $this->assert(not(Foswiki::Func::webExists($deleteWeb)));
+        $this->assert( not( Foswiki::Func::webExists($deleteWeb) ) );
     }
 }
 
