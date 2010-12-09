@@ -206,7 +206,7 @@ $replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
 
 }
 
-sub test_create_web {
+sub test_create_web_noauth {
     my $this = shift;
     
     my $newWeb = 'RestPluginCurlWeb';
@@ -225,8 +225,8 @@ sub test_create_web {
         'webs',
         'json',
         {
-            HTTP_RESPONSE_STATUS      => '201',
-            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            HTTP_RESPONSE_STATUS      => '401',
+            HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/webs',
         },
@@ -234,14 +234,13 @@ sub test_create_web {
     );
 
     $this->assert( not Foswiki::Func::webExists($newWeb) );
-    $this->assertt_equals( '#22ff22',
-        Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
-    $this->assertt_equals( 'web created by query REST API',
-        Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
+#    $this->assert_equals( '#22ff22',
+#        Foswiki::Func::getPreferencesValue( 'WEBBGCOLOR', $newWeb ) );
+#    $this->assert_equals( 'web created by query REST API',
+#        Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
 
 
-    #odd, it tells me that there is a web, but I can't see it on disk.
-    $newWeb = 'RestPluginCurlWeb/Subweb';
+    $newWeb = 'Sandbox/Subweb';
     $this->runTest(
         'POST',
         'text/json',
@@ -257,8 +256,8 @@ sub test_create_web {
         'webs',
         'json',
         {
-            HTTP_RESPONSE_STATUS      => '201',
-            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            HTTP_RESPONSE_STATUS      => '401',
+            HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
         },
@@ -282,8 +281,8 @@ sub test_create_web {
         'webs',
         'json',
         {
-            HTTP_RESPONSE_STATUS      => '404',
-            HTTP_RESPONSE_STATUS_TEXT => 'OK',
+            HTTP_RESPONSE_STATUS      => '401',
+            HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
 #            'X-Foswiki-Rest-Query'    => '\'RestPluginCurlWeb\'/webs',
 #            'Location'   => Foswiki::Func::getScriptUrl( undef, undef, 'query' ) .'/RestPluginCurlWeb/Subweb/webs',
         },

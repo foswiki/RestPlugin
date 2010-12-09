@@ -17,13 +17,15 @@ use Foswiki            ();
 use Foswiki::Serialise ();
 use Foswiki::Query::Parser;
 use Foswiki::Infix::Error ();
+use Foswiki::OopsException ();
+use Foswiki::AccessControlException();
 
 use Time::HiRes ();
 use REST::Utils qw( :all );
 use Error qw( :try );
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 1;
+use constant MONITOR_ALL => 0;
 
 
 #map MIME type to serialiseFunctions
@@ -267,10 +269,6 @@ sub query {
     my $accessType = 'CHANGE';
     $accessType = 'VIEW'   if ( $request_method eq 'GET' );
     $accessType = 'RENAME' if ( $request_method eq 'DELETE' );
-    $accessType = 'ROOTCHANGE'
-      if (  ( $request_method ne 'GET' )
-        and ( $web eq '' )
-        and ( not defined($topic) ) );
 
     if ( not $topicObject->haveAccess($accessType) ) {
         $res->header( -type => 'text/html', -status => '401' );
@@ -287,6 +285,7 @@ $requestPayload =~ /(.*)/s; $requestPayload = $1;
     print STDERR "----------- request_method : ||$request_method||\n" if MONITOR_ALL;
     print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
     print STDERR "----------- requestContentType : ||$requestContentType||\n" if MONITOR_ALL;
+    print STDERR "----------- accessType : ||$accessType||\n" if MONITOR_ALL;
     print STDERR "----------- requestPayload : ||$requestPayload||\n" if MONITOR_ALL;
     if ( ( $request_method ne 'GET' ) and ( $requestPayload eq '' ) ) {
         print STDERR
@@ -418,7 +417,7 @@ print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>".Dumper($info)."<<<<<<<<<<<<<<<<<<<<<<n
                 $topicObject = Foswiki::Meta->new( $session, $web, $topic );
 print STDERR "\n\nPOST: create new topic Meta ("
       . $topicObject->web . ", "
-      . ( $topicObject->topic || '>UNDEF<' ) . ")\n\n\n";
+      . ( $topicObject->topic || '>UNDEF<' ) . ")\n\n\n" if MONITOR_ALL;
 
                 copyFrom( $topicObject, $value );
                 $topicObject->text( $value->{_text} )
@@ -433,6 +432,8 @@ print STDERR "\n\nPOST: create new topic Meta ("
                 ASSERT( not defined($topic) ) if DEBUG;
                 $value->{newweb} = $web . '/' . $value->{newweb}
                   if ( defined($web) and ($web ne ''));
+                #it seems that the UI::Manage code is destructive to the input hash, so
+                my $newWeb = $value->{newweb};
                 require Foswiki::UI::Manage;
                 my $newReq = new Foswiki::Request($value)
                   ;    #use the payload to initialise the manage request
@@ -440,6 +441,7 @@ print STDERR "\n\nPOST: create new topic Meta ("
                 $newReq->method('manage');
                 my $oldReq = $session->{request};
                 $session->{request} = $newReq;
+                
                 #TODO: disable strikone for now
                 my $validation = $Foswiki::cfg{Validation}{Method};
                 $Foswiki::cfg{Validation}{Method} = 'none';
@@ -447,14 +449,19 @@ print STDERR "\n\nPOST: create new topic Meta ("
                     Foswiki::UI::Manage::_action_createweb($session);
                   } catch Foswiki::OopsException with {
                     my $e = shift;
-                    die 'whatever: '.$e->{template}.'....'.$e->stringify() if not($e->{template} eq 'attention' and $e->{def} eq 'created_web');
-                    
+                    die 'whatever: '.$e->{template}.'....'.$e->stringify()
+                                        if not($e->{template} eq 'attention' and $e->{def} eq 'created_web');
+                } catch Foswiki::AccessControlException with {
+                    my $e = shift;
+                    die 'error creating web';
                 }
+                finally {};
+
                 my @results = ();
-                ASSERT( Foswiki::Func::webExists($value->{newweb}) ) if DEBUG;
+                ASSERT( Foswiki::Func::webExists($newWeb) ) if DEBUG;
                 my $webObject =
                   Foswiki::Meta->load( $Foswiki::Plugins::SESSION,
-                    $value->{newweb} );
+                    $newWeb );
                 ASSERT($webObject->existsInStore()) if DEBUG;
                 push( @results, $webObject );
                 $result = \@results;
