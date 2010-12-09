@@ -496,7 +496,7 @@ sub test_attachmentsWebHome {
 }
 sub test_attachment_modify {
     my $this = shift;
-    
+
     $this->runTest(
         'POST',
         'text/json',
@@ -510,7 +510,7 @@ sub test_attachment_modify {
             HTTP_RESPONSE_STATUS      => '201',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
 #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-            'Location' => 'http://x61/f/bin/query/Sandbox/SomeAttachments/topic'
+            'Location' => Foswiki::Func::getScriptUrl('Sandbox', 'SomeAttachments', 'query') . '/topic'
         },
         '{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"reprev\" date=\"1291604133\" format=\"1.1\" reprev=\"1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":1291604133,"version":"1","reprev":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"reprev","format":1.1,"rev":"1"}],"_topic":"SomeAttachments"}',
     );
@@ -608,7 +608,7 @@ sub test_multiple_attachment_modify {
             HTTP_RESPONSE_STATUS      => '201',
             HTTP_RESPONSE_STATUS_TEXT => 'OK',
 #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-            'Location' => 'http://x61/f/bin/query/Sandbox/SomeAttachments/topic'
+            'Location' => Foswiki::Func::scriptUrlPath('Sandbox', 'SomeAttachments', 'query') . '/topic'
         },
         '{"_raw_text":"%META:TOPICINFO{_authorWikiName=\"WikiGuest\" author=\"BaseUserMapping_666\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" format=\"1.1\" version=\"1\"}%\nlets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_text":"lets create a topic.\n\n%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"EXTRACTED_FOR_TESTING\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n%META:FILEATTACHMENT{name=\"image.png\" attachment=\"image.png\" attr=\"\" comment=\"original comment\" date=\"EXTRACTED_FOR_TESTING\" path=\"image.png\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%\n","_web":"Sandbox","FILEATTACHMENT":[],"_loadedRev":"1","TOPICINFO":[{"date":"EXTRACTED_FOR_TESTING","version":"1","author":"BaseUserMapping_666","_authorWikiName":"WikiGuest","comment":"","format":1.1,"rev":"1"}],"_indices":{"TOPICINFO":{}},"_topic":"SomeAttachments"}'
     );
