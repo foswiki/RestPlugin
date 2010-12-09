@@ -590,7 +590,7 @@ sub test_multiple_attachment_modify {
                 HTTP_RESPONSE_STATUS      => '200',
                 HTTP_RESPONSE_STATUS_TEXT => 'OK',
     #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-#                'Location' => 'http://x61/f/bin/query/Sandbox/SomeAttachments/topic'
+#                'Location' => Foswiki::Func::getScriptUrl( undef, undef, 'query' ).'/Sandbox/SomeAttachments/topic'
             },
         );
     }
@@ -680,7 +680,7 @@ sub test_multiple_attachment_modify {
                 HTTP_RESPONSE_STATUS      => '200',
                 HTTP_RESPONSE_STATUS_TEXT => 'OK',
     #            'X-Foswiki-Rest-Query'    => '\'Sandbox.SomeAttachments\'/attachments',
-#                'Location' => 'http://x61/f/bin/query/Sandbox/SomeAttachments/topic'
+#                'Location' => Foswiki::Func::getScriptUrl( undef, undef, 'query' ).'/Sandbox/SomeAttachments/topic'
             },
         );
     $this->runTest(
