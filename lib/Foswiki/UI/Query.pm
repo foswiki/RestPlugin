@@ -23,7 +23,7 @@ use REST::Utils qw( :all );
 use Error qw( :try );
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 0;
+use constant MONITOR_ALL => 1;
 
 
 #map MIME type to serialiseFunctions
@@ -282,7 +282,8 @@ sub query {
     my $requestContentType = $req->header('Content-Type') || 'text/json';
     my $requestPayload = REST::Utils::get_body($req);
 #untaint randomly :/
-$requestPayload =~ /(.*)/; $requestPayload = $1;
+$requestPayload =~ /(.*)/s; $requestPayload = $1;
+
     print STDERR "----------- request_method : ||$request_method||\n" if MONITOR_ALL;
     print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
     print STDERR "----------- requestContentType : ||$requestContentType||\n" if MONITOR_ALL;

@@ -209,7 +209,6 @@ $replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
 sub test_create_web {
     my $this = shift;
     
-    #$this->{test_web}, 'SomeAttachments',
     my $newWeb = 'RestPluginCurlWeb';
     $this->runTest(
         'POST',
@@ -472,7 +471,7 @@ sub test_attachmentsProjectLogos_favicon_ico {
             HTTP_RESPONSE_STATUS_TEXT => 'Authorization Required',
 #            'X-Foswiki-Rest-Query'    => '\'System.ProjectLogos\'/attachments[name=\'favicon.ico\']',
         },
-'{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"}',
+        undef   #its an error, not a payload
     );
 }
 
