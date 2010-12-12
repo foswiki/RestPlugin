@@ -26,7 +26,6 @@ when using =curl=,
    * Apache auth can be used via the =-u login:pass= cmdline parameter
    * Template auth can be used by appending =?username=login;password=pass= to the URL
 ---+++ TODO: 
-   1 strikeone validation
    2 API key for non-interactive users that need curl and thus to avoid strikeone
    3 return codes and tests for all / most cases
    4 =PUT=

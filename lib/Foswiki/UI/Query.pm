@@ -26,7 +26,7 @@ use REST::Utils qw( :all );
 use Error qw( :try );
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 1;
+use constant MONITOR_ALL => 0;
 
 #map MIME type to serialiseFunctions
 our %serialiseFunctions = (

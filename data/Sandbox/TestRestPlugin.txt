@@ -40,44 +40,33 @@ $(document).ready(function() {
         var element = $('input:radio[name=element]:checked').val();
         var encoding = $('input:radio[name=encoding]:checked').val();
     
-        var payload = $('#queryTestForm_SUBMIT').topicData;
+        var newtext = $('#queryTestForm_SUBMIT').topicData;
 
-        // inside event callbacks 'this' is the DOM element so we first 
-        // wrap it in a jQuery object and then invoke ajaxSubmit
-        var request_it = {
-            target:        '#query_output',
-            url:           'http://x61/f/bin/query/'+query+'/'+element+'.'+encoding,
-            type:           'PATCH',
-            dataType:       encoding,
-            data:           {"_text": "set the text to something"},
-            //processData:    false,
-            //beforeSubmit: showRequest,  // pre-submit callback 
-            success:        showResponse,  // post-submit callback 
-            beforeSend:     addNonceToHeader
-        };
         //clear the textarea
         $('#query_output').text('SUBMITTING');
         //$(this).ajaxSubmit(request_it); 
-        $.ajax({
-                url:           'http://x61/f/bin/query/'+query+'/'+element+'.'+encoding,
-                type:           'PATCH',
-                dataType:       encoding,           //response type
-                contentType:    'application/json; charset=utf-8',
-                data:           {"_text": "set the text to something"},
-                processData:    false,      //stop the darn thing sending application/x-www-form-urlencoded
-                success:        showResponse,  // post-submit callback 
-                beforeSend:     addNonceToHeader
-            });
- 
-        // !!! Important !!! 
-        // always return false to prevent standard browser submit and page navigation 
-        return false; 
+        
+        
+        jQuery.ajax({
+                    contentType: 'text/json', 
+                    data: '{"_text": "'+newtext+'"}', 
+                    processData:    false,
+                    type: 'PATCH', 
+                    url: 'http://x61/f/bin/query/'+query+'/'+element+'.'+encoding, 
+                    success:        showResponse,  // post-submit callback 
+                    beforeSend:     addNonceToHeader
+                    });
+
+        return false;
     });
 });
 function addNonceToHeader(xhr) {
     //Add strikeone and SessionId to headers too
     xhr.setRequestHeader("Cookie", "IE is shite");
     xhr.setRequestHeader("Cookie", document.cookie);
+
+    //jquery < 1.4.4 needs to use POST and the over-ride cos its busted and sends an empty payload.
+    //xhr.setRequestHeader("X-HTTP-METHOD-OVERRIDE", 'PATCH');
     
     var nonce = $('#queryTestForm_SUBMIT #query_nonce').val();
     
