@@ -25,19 +25,25 @@ At this point 2 Login managers have been tested, Apache auth based, and !Templat
 when using =curl=,
    * Apache auth can be used via the =-u login:pass= cmdline parameter
    * Template auth can be used by appending =?username=login;password=pass= to the URL
-
+---+++ TODO: 
+   1 strikeone validation
+   2 API key for non-interactive users that need curl and thus to avoid strikeone
+   3 return codes and tests for all / most cases
+   4 =PUT=
+   5 more serialisations - including www-form..
+   6 make =OPTIONS= response contextural
 ---+++ Resources
 ---++++ Web
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
 | =GET=    |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=      |  get web resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
-| =POST=   |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=     |  create a new web in the uri's container web - parameters in payload as for the manage=createWeb     |
+| =POST=   |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=      |  create a new web in the uri's container web - parameters in payload as for the manage=createWeb     |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  update a web resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
 | =PATCH=  |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  same as PUT?     |
-| =DELETE= |     yes       | =http://x61/bin/query/{Webname}/webs[.json]=       |  delete web     |
+| =DELETE= |     yes       | =http://x61/bin/query/{Webname}/webs[.json]=        |  delete web     |
 ---++++ Topic
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
 | =GET=    |     yes       | =http://x61/bin/query/{Webname}/[{TopicName/}]topic[.json]=      |  get topic's meta (if no TopicName is specified, list of all topics in a web. (array of names only?))    |
-| =POST=   |     yes       | =http://x61/bin/query/{Webname}/topic[.json]=                   |  (TODO: might rejig to use UI::Manage::_create) create a new topic in the web container using the payload as topic data, and respecting AUTOINC name requests |
+| =POST=   |     yes       | =http://x61/bin/query/{Webname}/topic[.json]=                    |  (TODO: might rejig to use UI::Manage::_create) create a new topic in the web container using the payload as topic data, and respecting AUTOINC name requests |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update/create a topic resource completely with the payload - anything missing from the sent structure will be removed in the new revision, will not respect AUTOINC, and will use the topic name in the URI, not the payload. |
 | =PATCH=  |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update a topic using only a partial data - leaving unsent fields the same as n-1    |
 | =DELETE= |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  delete topic     |
@@ -57,6 +63,8 @@ To suport the different operations, =query= supports =GET|PUT|POST|PATCH|DELETE=
 and as some web servers are set up to not accept all these, we can tunnel these using the URI param =?_method=PATCH=, 
 or and added Header element - =X-HTTP-METHOD-OVERRIDE=. Note that these must be tunneled via a =POST=
 
+---++++ OPTIONS
+will give simple docco about what requests are supported
 ---++++ GET
 ---++++ PUT
 ---++++ POST
