@@ -24,6 +24,11 @@ sub new {
 
 sub set_up {
     my $this = shift;
+    
+    #turn off validation so we don't need to hack around with nonce
+    #TODO: add nonces testing later.
+    $Foswiki::cfg{Validation}{Method} = 'none';
+    
     $this->SUPER::set_up();
 
     my $meta =

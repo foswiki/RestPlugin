@@ -73,6 +73,7 @@ Creates a new element in a container. So if you want to create a new topic, the 
 
 ---+++ Examples:
 ---++++ using =curl= to update topic data.
+__now that the strikeone support is added, these example only work with Validation=none__ fix to come
 =curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json= can be used to send a JSON payload 
 that will set _only_ the topic text of your user's topic (ignoring authentication issues)
 
