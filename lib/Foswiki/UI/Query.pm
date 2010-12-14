@@ -367,6 +367,8 @@ print STDERR "$err\n";
                       map { { '_topic' => $_ } }
                       Foswiki::Func::getTopicList($web);
                     $result = \@topicList;
+                    $res->pushHeader( 'Location',
+                        getResourceURI( $topicObject, $elementAlias) );
                 }
 
 #                elsif (( $elementAlias eq 'attachments' ) and not(defined($topic))) {
@@ -384,6 +386,8 @@ print STDERR "$err\n";
                         tom  => $topicObject,
                         data => $topicObject
                     );
+                    $res->pushHeader( 'Location',
+                        getResourceURI( $result, $elementAlias) );
                 }
             }
             elsif ( $elementAlias eq 'webs' ) {
@@ -401,7 +405,10 @@ print STDERR "$err\n";
                     $m
                 } @webs;
                 $result = \@results;
+                $res->pushHeader( 'Location',
+                    getResourceURI( $topicObject, $elementAlias) );
             }
+            $res->status(200);
         }
         elsif ( $request_method eq 'PUT' ) {
             die 'not implemented';
@@ -462,6 +469,9 @@ print STDERR "$err\n";
                     data => $topicObject
                 );
             }
+            $res->pushHeader( 'Location',
+                getResourceURI( $result, $elementAlias) );
+            $res->status(201);
         }
         elsif ( $request_method eq 'POST' ) {
             ASSERT( $requestPayload ne '' ) if DEBUG;
@@ -491,7 +501,7 @@ print STDERR "$err\n";
                 $topicObject->save();
                 $result = $topicObject;
                 $res->pushHeader( 'Location',
-                    getResourceURI( $topicObject, 'topic' ) );
+                    getResourceURI( $result, $elementAlias ) );
             }
             elsif ( $elementAlias eq 'webs' ) {
 
@@ -551,7 +561,7 @@ print STDERR "$err\n";
     #need a location header
     #if we created something, but are not returning it, then status = 200 or 204
     #could use 303 to redirect to the created resource too..?
-            $res->status('201 OK');
+            $res->status('201  Created');
 
         }
         elsif ( $request_method eq 'DELETE' ) {
@@ -600,6 +610,7 @@ print STDERR "$err\n";
             }
 
             $result = {};
+            $res->status('204  No Content');
         }
         elsif ( $request_method eq 'OPTIONS' ) {
             #TODO: detect where we are pointing, and give a list of verbs we can do
