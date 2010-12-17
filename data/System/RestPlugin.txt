@@ -77,6 +77,12 @@ __now that the strikeone support is added, these example only work with Validati
 =curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json= can be used to send a JSON payload 
 that will set _only_ the topic text of your user's topic (ignoring authentication issues)
 
+and if need to pipe data from another commandline app:
+<verbatim>
+echo '{phone: 123.456.7890}' |\
+curl -X PATCH -H "Content-Type:text/json" -d @- 'http://x61/f/bin/query/Main/SvenDowideit/topic.json'
+</verbatim>
+
 ---++ Installation Instructions
 
 %$INSTALL_INSTRUCTIONS%
