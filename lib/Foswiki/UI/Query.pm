@@ -367,8 +367,9 @@ print STDERR "$err\n";
                       map { { '_topic' => $_ } }
                       Foswiki::Func::getTopicList($web);
                     $result = \@topicList;
-                    $res->pushHeader( 'Location',
-                        getResourceURI( $topicObject, $elementAlias) );
+                    #TODO: can't do this atm, it returns a topic location and thus a 302
+                    #$res->pushHeader( 'Location',
+                    #    getResourceURI( $topicObject, $elementAlias) );
                 }
 
 #                elsif (( $elementAlias eq 'attachments' ) and not(defined($topic))) {
