@@ -12,7 +12,7 @@ use Foswiki::Serialise ();
 use JSON               ();
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 1;
+use constant MONITOR_ALL => 0;
 
 my $UI_FN;
 my $fatwilly;

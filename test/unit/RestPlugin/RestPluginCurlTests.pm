@@ -10,7 +10,7 @@ use Foswiki::Serialise ();
 use JSON               ();
 use File::Path qw(mkpath);
 
-use constant MONITOR => 0;
+use constant MONITOR => 1;
 
 sub new {
     my $self = shift()->SUPER::new(@_);
@@ -126,7 +126,7 @@ s/(\d\d:\d\d:\d\d\.\d\d\d\d\d\d) ([<*>{}]) (.*)(\n)/addToResultHash($1, $2, $3, 
 
     #print STDERR "\n================\n$result\n==========\n";
 
-#print STDERR join("\n-----------------\n", ($result, $data->{'*'}, $data->{'>'}, $data->{'<'}));
+print STDERR join("\n-----------------\n", ($result, $data->{'*'}, $data->{'>'}, $data->{'<'})) if MONITOR;
 
     return ( $result, $data );
 }
