@@ -69,6 +69,7 @@ will give simple docco about what requests are supported
 ---++++ POST
 Creates a new element in a container. So if you want to create a new topic, the URI is that of the web you want to place it, and the payload will contain a value that has a =_topic=
 ---++++ PATCH
+modifies an existing item, changing only the elements sent in the payload - thus allowing you to modify just the topic text, the value of one 'named' FIELD, or one Attachement's data.
 ---++++ DELETE
 
 ---+++ Examples:

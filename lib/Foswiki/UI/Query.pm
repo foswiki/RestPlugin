@@ -419,18 +419,20 @@ print STDERR "$err\n";
               Foswiki::Serialise::deserialise( $session, $requestPayload,
                 mapMimeType($requestContentType) );
             if ( $elementAlias eq 'topic' ) {
-                copyFrom( $topicObject, $value );    #copy meta..
+                mergeFrom( $topicObject, $value );    #copy meta..
 
 #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 $topicObject->text( $value->{_text} )
                   if ( defined( $value->{_text} ) );
                 $topicObject->save();
+                $res->pushHeader( 'Location',
+                    getResourceURI( $topicObject, $elementAlias) );
                 $result = Foswiki::Serialise::convertMeta($topicObject);
             }
             elsif ( $elementAlias eq 'attachments' ) {
                 if ( ( not defined($attachment) ) or ( $attachment eq '' ) ) {
                     my $hash = { "FILEATTACHMENT" => $value };
-                    copyFrom( $topicObject, $hash );    #copy meta..
+                    mergeFrom( $topicObject, $hash );    #copy meta..
 
 #print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 }
@@ -468,9 +470,11 @@ print STDERR "$err\n";
                     tom  => $topicObject,
                     data => $topicObject
                 );
+                $res->pushHeader( 'Location',
+                    getResourceURI( $result, $elementAlias) );
+                $result = Foswiki::Serialise::convertMeta($result); ###TODO: Extractme
             }
-            $res->pushHeader( 'Location',
-                getResourceURI( $result, $elementAlias) );
+
             $res->status(201);
         }
         elsif ( $request_method eq 'POST' ) {
@@ -722,6 +726,8 @@ sub getResourceURI {
     my $meta         = shift;
     my $elementAlias = shift;    #TODO: derive this from the meta..
 
+    #ASSERT($meta->isa('Foswiki::Meta')) if DEBUG;
+
     print STDERR "getResourceURI - getScriptUrl("
       . $meta->web . ", "
       . ( $meta->topic || '>UNDEF<' )
@@ -798,15 +804,8 @@ sub authenticate {
 
 ########################
 #yes, this is a simplified copy from Foswiki::Meta::copyFrom so we can copy from a random hashref
-#TODO: this is not a PUT/POST, its a PATCH.
 sub copyFrom {
     my ( $meta, $other, $type, $filter ) = @_;
-
-    #ASSERT( $meta->{_web} && $meta->{_topic}, '$this is not a topic object' )
-    #  if DEBUG;
-    #ASSERT( $other->isa('Foswiki::Meta') && $other->{_web} && $other->{_topic},
-    #    'other is not a topic object' )
-    #  if DEBUG;
 
     if ($type) {
         return if $type =~ /^_/;
@@ -816,17 +815,42 @@ sub copyFrom {
                 || ( $item->{name} && $item->{name} =~ /$filter/ ) )
             {
                 my %datum = %$item;
-                push( @data, \%datum );
+                push(@data, \%datum)
             }
         }
-        print STDERR "--------------actually modifying $type..\n"
-          if MONITOR_ALL;
-        $meta->putAll( $type, @data );
+        $meta->putAll($type, @data)
     }
     else {
         foreach my $k ( keys %$other ) {
             unless ( $k =~ /^_/ ) {
                 copyFrom( $meta, $other, $k );
+            }
+        }
+    }
+}
+#this is the PATCH version of copyfrom
+sub mergeFrom {
+    my ( $meta, $other, $type, $filter ) = @_;
+
+    if ($type) {
+        return if $type =~ /^_/;
+        foreach my $item ( @{ $other->{$type} } ) {
+            if ( !$filter
+                || ( $item->{name} && $item->{name} =~ /$filter/ ) )
+            {
+                my $old = $meta->get($type, $item->{name});
+                 my %hash = ();
+                 #Merge old element with new data - that way keys that are not in the payload still get used.
+                 %hash = %$old if (defined($old)); 
+                 @hash{keys(%$item)} = values(%$item);
+                 $meta->putKeyed($type, \%hash)
+            }
+        }
+    }
+    else {
+        foreach my $k ( keys %$other ) {
+            unless ( $k =~ /^_/ ) {
+                mergeFrom( $meta, $other, $k );
             }
         }
     }

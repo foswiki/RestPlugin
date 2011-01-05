@@ -10,6 +10,8 @@ use Foswiki::Serialise ();
 use JSON               ();
 use File::Path qw(mkpath);
 
+use constant MONITOR => 0;
+
 sub new {
     my $self = shift()->SUPER::new(@_);
     return $self;
@@ -106,7 +108,7 @@ sub callCurl {
       . $requestContent . '\' '
       . $url;
 
-    print STDERR "\n\n----\n$curlCommand\n----\n";
+    print STDERR "\n\n----\n$curlCommand\n----\n" if MONITOR;
     my $result = `$curlCommand 2>&1`
       ;    # grrrr, aparently they output the header info into stderr
 
@@ -199,10 +201,10 @@ sub runTest {
         $replytext =~ s/date=\\"(.*?)\\"/date=\\"EXTRACTED_FOR_TESTING\\"/g;
         $replytext =~ s/"date":(.*?),/"date":"EXTRACTED_FOR_TESTING",/g;
 
-        print STDERR "\njson expected:\n";
-        print STDERR $expectedReplyPayload;
-        print STDERR "\njson got:\n";
-        print STDERR $replytext;
+        print STDERR "\njson expected:\n" if MONITOR;
+        print STDERR $expectedReplyPayload if MONITOR;
+        print STDERR "\njson got:\n" if MONITOR;
+        print STDERR $replytext if MONITOR;
         my $replyObj =
           Foswiki::Serialise::deserialise( $this->{session}, $replytext,
             'json' );

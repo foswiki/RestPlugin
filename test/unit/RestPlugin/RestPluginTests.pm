@@ -12,7 +12,7 @@ use Foswiki::Serialise ();
 use JSON               ();
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 0;
+use constant MONITOR_ALL => 1;
 
 my $UI_FN;
 my $fatwilly;
@@ -272,7 +272,7 @@ sub testPATCH_JustOneField_Topic {
     #modify it a little and PUT
     {
 
-#print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
+print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $partialItem->{FIELD}[0]->{value} = 'Something new, something blue';
         foreach my $key ( keys( %{$partialItem} ) ) {
@@ -298,7 +298,76 @@ sub testPATCH_JustOneField_Topic {
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-#print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+
+        my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+        $this->assert_deep_equals( $NEWfromJSON,
+            Foswiki::Serialise::convertMeta($meta) );
+        $this->assert_equals(
+            $NEWfromJSON->{FIELD}[0]->{value},
+            'Something new, something blue'
+        );
+        $this->assert_equals(
+            $NEWfromJSON->{FIELD}[0]->{name},
+            'Summary'
+        );
+        $this->assert_equals(
+            $NEWfromJSON->{FIELD}[0]->{title},
+            'Summary'
+        );
+
+        $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
+            $fromJSON->{_raw_text} );
+        $this->assert_equals( $NEWfromJSON->{_text}, $fromJSON->{_text} );
+
+        #make sure the other FIELD is still as it was before.
+        $this->assert_equals( $NEWfromJSON->{FIELD}[1]->{value},
+            $fromJSON->{FIELD}[1]->{value} );
+        $this->assert_equals( 'work it out yourself!',
+            $NEWfromJSON->{FIELD}[1]->{value} );
+        $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
+    }
+}
+
+#modify partial item updates
+sub testPATCH_OneArrayElementByName_Topic {
+    my $this = shift;
+
+    #GET the topic
+    my ( $meta, $text ) =
+      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ( $replytext, $hdr ) = $this->call_UI_query(
+        '/' . $this->{test_web} . '/Improvement2/topic.json',
+        'GET', {} );
+    my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+    $this->assert_deep_equals( $fromJSON,
+        Foswiki::Serialise::convertMeta($meta) );
+
+    #send PATCH with only the one 
+    {
+
+print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
+        my $partialItem = {"FIELD" => [{"name"=>"Summary", "value" => 'Something new, something blue'}]};
+        my $sendJSON = JSON::to_json($partialItem);
+
+     print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
+
+        ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . $this->{test_web} . '/Improvement2/topic.json',
+            'PATCH', { 'POSTDATA' => $sendJSON } );
+
+        #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
+    }
+
+    #then make sure it saved using GET..
+    {
+        my ( $meta, $text ) =
+          Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . $this->{test_web} . '/Improvement2/topic.json',
+            'GET', {} );
+
+print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -320,6 +389,8 @@ sub testPATCH_JustOneField_Topic {
         $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
 }
+
+
 
 #modify partial item updates
 sub testPATCH_Topic_PARENT {
