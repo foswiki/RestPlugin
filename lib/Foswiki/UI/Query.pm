@@ -64,7 +64,7 @@ sub workoutSerialisation {
     
 
     #try out REST::Utils::media_type
-    my $prefered = REST::Utils::media_type( $query, @supportedContentTypes );
+    my $prefered = REST::Utils::media_type( $query, \@supportedContentTypes );
     $prefered = 'text/json'
       if ( not defined($prefered) or ( $prefered eq '' ) );
     ASSERT($prefered) if DEBUG;
@@ -141,7 +141,7 @@ sub query {
     #a URL specified mediatype will over-ride the request header one..
     my $responseContentType = workoutSerialisation( $req, $url_mediatype );
     print STDERR
-      "---- responseContentType: $responseContentType (was $url_mediatype)\n";
+      "---- responseContentType: $responseContentType (was ".($url_mediatype||'undef').")\n";
 
     #validate alias
     #TODO: there appear to me other 'aliases' defined in QueryAlgo::getField..
@@ -386,8 +386,9 @@ print STDERR "$err\n";
                         tom  => $topicObject,
                         data => $topicObject
                     );
-                    $res->pushHeader( 'Location',
-                        getResourceURI( $result, $elementAlias) );
+                    #TODO: this isn't a topic..
+#                    $res->pushHeader( 'Location',
+#                        getResourceURI( $result, $elementAlias) ) if (defined($result));
                 }
             }
             elsif ( $elementAlias eq 'webs' ) {
