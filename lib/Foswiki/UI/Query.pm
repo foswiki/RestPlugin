@@ -12,6 +12,7 @@ package Foswiki::UI::Query;
 
 use strict;
 use warnings;
+
 use Assert;
 use Foswiki            ();
 use Foswiki::Serialise ();
@@ -26,7 +27,7 @@ use REST::Utils qw( :all );
 use Error qw( :try );
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 0;
+use constant MONITOR_ALL => 1;
 
 #map MIME type to serialiseFunctions
 our %serialiseFunctions = (
@@ -118,7 +119,7 @@ sub query {
     }
 
     authenticate($session); #actually, this does login if ?username is there, and then tests if the script needs auth.
-    print STDERR "after auth, running as ".Foswiki::Func::getWikiName(Foswiki::Func::getCanonicalUserID())."\n" if MONITOR_ALL;
+    writeDebug("after auth, running as ".Foswiki::Func::getWikiName(Foswiki::Func::getCanonicalUserID())."\n") if MONITOR_ALL;
 
 #delegate to POSTquery
 #return POSTquery($session, %initialContext) if ($request_method eq 'POST');
@@ -135,13 +136,13 @@ sub query {
         throw Foswiki::EngineException( 400, $err, $res );
     }
     my ( $query, $elementAlias, $url_mediatype ) = ( $1, $2, $3 );
-    print STDERR "---- elementAlias: $elementAlias\n" if MONITOR_ALL;
+    writeDebug("---- elementAlias: $elementAlias\n") if MONITOR_ALL;
 
     #find the best mediatype
     #a URL specified mediatype will over-ride the request header one..
     my $responseContentType = workoutSerialisation( $req, $url_mediatype );
-    print STDERR
-      "---- responseContentType: $responseContentType (was ".($url_mediatype||'undef').")\n";
+    writeDebug(
+      "---- responseContentType: $responseContentType (was ".($url_mediatype||'undef').")\n");
 
     #validate alias
     #TODO: there appear to me other 'aliases' defined in QueryAlgo::getField..
@@ -218,10 +219,10 @@ sub query {
             #attachments are to a topic, so the simple regex above is ok
             my $webExists = Foswiki::Func::webExists($web);
             my $topicExists = Foswiki::Func::topicExists( $web, $topic );
-            print STDERR "****************($web)($topic)  (web:"
+            writeDebug("****************($web)($topic)  (web:"
               . ( $webExists ? 'exists' : 'unknown' )
               . ", topic:"
-              . ( $topicExists ? 'exists' : 'unknown' ) . ")\n"
+              . ( $topicExists ? 'exists' : 'unknown' ) . ")\n")
               if MONITOR_ALL;
             $baseObjectExists = ( $webExists and $topicExists );
             $query = "'$web.$topic'/$elementAlias";
@@ -236,13 +237,13 @@ sub query {
                 $topicExists = Foswiki::Func::topicExists( $web, $topic );
                 my $attachmentExists =
                   Foswiki::Func::attachmentExists( $web, $topic, $attachment );
-                print STDERR
+                writeDebug(
                   "******************($web)($topic)($attachment)  (web:"
                   . ( $webExists ? 'exists' : 'unknown' )
                   . ", topic:"
                   . ( $topicExists ? 'exists' : 'unknown' )
                   . ", attach:"
-                  . ( $attachmentExists ? 'exists' : 'unknown' ) . ")\n"
+                  . ( $attachmentExists ? 'exists' : 'unknown' ) . ")\n")
                   if MONITOR_ALL;
                 $baseObjectExists =
                   ( $webExists and $topicExists and $attachmentExists );
@@ -262,9 +263,9 @@ sub query {
     else {
         die 'not implemented (' . $query . ')';
     }
-    print STDERR "----------- request_method : ||$request_method||\n"
+    writeDebug("----------- request_method : ||$request_method||\n")
       if MONITOR_ALL;
-    print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
+    writeDebug("----------- query : ||$query||\n") if MONITOR_ALL;
 
 #need to test if this topic exists, as Meta->new currently returns an obj, even if the web, or the topic don't exist. totally yuck.
 #TODO: note that if we're PUT-ing and the item does not exist, we're basically POSTing, but to a static URI, not to a collection.
@@ -276,11 +277,11 @@ sub query {
         throw Foswiki::EngineException( 404, $err, $res );
     }
     my $topicObject = Foswiki::Meta->new( $session, $web, $topic );
-    print STDERR "---- new($web, "
+    writeDebug("---- new($web, "
       . ( $topic || '>UNDEF<' )
       . ") ==  actual Meta ("
       . $topicObject->web . ", "
-      . ( $topicObject->topic || '>UNDEF<' ) . ")\n";
+      . ( $topicObject->topic || '>UNDEF<' ) . ")\n");
 
 #TODO: this will need ammending when we actually query, as we don't know what topics we're talking about at this point.
     my $accessType = 'CHANGE';
@@ -295,7 +296,7 @@ sub query {
     }
 
 #show header as we seem to have received item
-    print STDERR "::::::::::::::::::::::::: header:\n    ".join("\n    ", map { $_.' : '.$req->header($_) } $req->header())."\n" if MONITOR_ALL;
+    writeDebug("::::::::::::::::::::::::: header:\n    ".join("\n    ", map { $_.' : '.$req->header($_) } $req->header())."\n") if MONITOR_ALL;
 
     my ($requestContentType, $requestCharSet) = split(/;/, $req->header('Content-Type') || 'text/json');
     
@@ -305,13 +306,13 @@ sub query {
     $requestPayload =~ /(.*)/s;
     $requestPayload = $1;
 
-    print STDERR "----------- request_method : ||$request_method||\n"
+    writeDebug("----------- request_method : ||$request_method||\n")
       if MONITOR_ALL;
-    print STDERR "----------- query : ||$query||\n" if MONITOR_ALL;
-    print STDERR "----------- requestContentType : ||$requestContentType||\n"
+    writeDebug("----------- query : ||$query||\n") if MONITOR_ALL;
+    writeDebug("----------- requestContentType : ||$requestContentType||\n")
       if MONITOR_ALL;
-    print STDERR "----------- accessType : ||$accessType||\n" if MONITOR_ALL;
-    print STDERR "----------- requestPayload : ||$requestPayload||\n"
+    writeDebug("----------- accessType : ||$accessType||\n") if MONITOR_ALL;
+    writeDebug("----------- requestPayload : ||$requestPayload||\n")
       if MONITOR_ALL;
 
 
@@ -323,21 +324,21 @@ sub query {
         #test if the anti-CSRF is present and correct.
 
         my $nonce = $session->{request}->header( 'X-Foswiki-Nonce');
-print STDERR "%%%%%%%%%%%%%%%%%%%%%%%% $nonce testing \n";
+writeDebug("%%%%%%%%%%%%%%%%%%%%%%%% $nonce testing \n");
         if ( !defined($nonce)
             || !Foswiki::Validation::isValidNonce( $session->getCGISession(),
                 $nonce ) ) {
                 $res->header( -type => 'text/html', -status => '401' );
                 $err = "ERROR: (401) Foswiki validation key error";
-print STDERR "$err\n";
+writeDebug("$err\n");
                 $res->print($err);
                 throw Foswiki::EngineException( 401, $err, $res );
          }
     }
 
     if ( ( $request_method ne 'GET' ) and ( $requestPayload eq '' ) ) {
-        print STDERR
-          "@@@@@@@@@@@@@@@@@@@@ no payload. writing to /tmp/cgi.out\n";
+        writeDebug(
+          "@@@@@@@@@@@@@@@@@@@@ no payload. writing to /tmp/cgi.out\n");
         open( OUT, '>', '/tmp/cgi.out' );
         $req->save( \*OUT );
         close(OUT);
@@ -378,8 +379,8 @@ print STDERR "$err\n";
                     my $evalParser = new Foswiki::Query::Parser();
                     my $querytxt   = $query;
                     $querytxt =~ s/(topic)$/hash/;
-                    print STDERR
-"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n"
+                    writeDebug(
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n")
                       if MONITOR_ALL;
                     my $node = $evalParser->parse($querytxt);
 
@@ -402,7 +403,7 @@ print STDERR "$err\n";
                 my @results = map {
                     my $m =
                       Foswiki::Meta->load( $Foswiki::Plugins::SESSION, $_ );
-                    print STDERR "::::: load($_) == " . $m->web . "\n"
+                    writeDebug("::::: load($_) == " . $m->web . "\n")
                       if MONITOR_ALL;
                     $m
                 } @webs;
@@ -423,7 +424,7 @@ print STDERR "$err\n";
             if ( $elementAlias eq 'topic' ) {
                 mergeFrom( $topicObject, $value );    #copy meta..
 
-#print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
+#writeDebug(")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 $topicObject->text( $value->{_text} )
                   if ( defined( $value->{_text} ) );
                 $topicObject->save();
@@ -436,21 +437,21 @@ print STDERR "$err\n";
                     my $hash = { "FILEATTACHMENT" => $value };
                     mergeFrom( $topicObject, $hash );    #copy meta..
 
-#print STDERR ")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
+#writeDebug(")))))".Foswiki::Serialise::serialise( $session, $value, 'perl' )."(((((\n" if MONITOR_ALL;
                 }
                 else {
                     my $info =
                       $topicObject->getAttachmentRevisionInfo($attachment);
                     use Data::Dumper;
-                    print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>"
+                    writeDebug(">>>>>>>>>>>>>>>>>>>>>>>>>>"
                       . Dumper($info)
-                      . "<<<<<<<<<<<<<<<<<<<<<<n"
+                      . "<<<<<<<<<<<<<<<<<<<<<<n")
                       if MONITOR_ALL;
                     @{$info}{ keys(%$value) } = values(%$value)
                       ;  #over-ride the server version with whats in the payload
-                    print STDERR ">>>>>>>>>>>>>>>>>>>>>>>>>>"
+                    writeDebug(">>>>>>>>>>>>>>>>>>>>>>>>>>"
                       . Dumper($info)
-                      . "<<<<<<<<<<<<<<<<<<<<<<n"
+                      . "<<<<<<<<<<<<<<<<<<<<<<n")
                       if MONITOR_ALL;
 
                     #TODO: shoudl make sure there's no stream or file set
@@ -464,8 +465,8 @@ print STDERR "$err\n";
                 my $evalParser = new Foswiki::Query::Parser();
                 my $querytxt   = $query;
                 $querytxt =~ s/(topic)$/hash/;
-                print STDERR
-"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n";
+                writeDebug(
+"~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n");
                 my $node = $evalParser->parse($querytxt);
 
                 $result = $node->evaluate(
@@ -495,10 +496,10 @@ print STDERR "$err\n";
                 #TODO: actually, consider using the UI::Manage::_create
                 #new topic...
                 $topicObject = Foswiki::Meta->new( $session, $web, $topic );
-                print STDERR "\n\nPOST: create new topic Meta ("
+                writeDebug("\n\nPOST: create new topic Meta ("
                   . $topicObject->web . ", "
                   . ( $topicObject->topic || '>UNDEF<' )
-                  . ")\n\n\n"
+                  . ")\n\n\n")
                   if MONITOR_ALL;
 
                 copyFrom( $topicObject, $value );
@@ -576,8 +577,8 @@ print STDERR "$err\n";
                 ASSERT( Foswiki::Func::webExists($web) ) if DEBUG;
                 my $trashWeb = $web . time();
                 $trashWeb =~ s/[\/.]/_/g;
-                print STDERR
-" Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb)\n"
+                writeDebug(
+" Foswiki::Func::moveWeb($web, $Foswiki::cfg{TrashWebName}.'.'.$trashWeb)\n")
                   if MONITOR_ALL;
                 Foswiki::Func::moveWeb( $web,
                     $Foswiki::cfg{TrashWebName} . '.' . $trashWeb );
@@ -642,11 +643,11 @@ print STDERR "$err\n";
 
 #might be an array of Meta's
 #TODO: should the reply _always_ be an array?
-#print STDERR "------------------ ref(result): " . ref($result) . "\n" if MONITOR_ALL;
+#writeDebug("------------------ ref(result): " . ref($result) . "\n" if MONITOR_ALL;
         if ( ref($result) eq 'ARRAY' ) {
             for ( my $i = 0 ; $i < scalar(@$result) ; $i++ ) {
 
-#print STDERR "------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n" if MONITOR_ALL;
+#writeDebug("------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n" if MONITOR_ALL;
                 if ( ref( $result->[$i] ) eq 'Foswiki::Meta' ) {
                     $result->[$i] =
                       Foswiki::Serialise::convertMeta( $result->[$i] );
@@ -681,7 +682,7 @@ print STDERR "$err\n";
 
         use Scalar::Util qw(blessed reftype);
         if ( blessed($result) ) {
-            print STDERR "WARNING: result is a blessed object\n" if MONITOR_ALL;
+            writeDebug("WARNING: result is a blessed object\n") if MONITOR_ALL;
             ASSERT( not defined( blessed($result) ) );
         }
 
@@ -705,10 +706,10 @@ print STDERR "$err\n";
         #ouchie, VC::Handler errors
         my $e = shift;
         use Data::Dumper;
-        print STDERR "Result Payload would have been: " . Dumper($result) . "\n"
+        writeDebug("Result Payload would have been: " . Dumper($result) . "\n")
           if MONITOR_ALL;
         $result = $e->{-text};
-        print STDERR "SimpleERROR: $result\n" if MONITOR_ALL;
+        writeDebug("SimpleERROR: $result\n") if MONITOR_ALL;
         $res->status( '500 ' . $result );
     }
     catch Foswiki::Infix::Error with {
@@ -719,7 +720,7 @@ print STDERR "$err\n";
     finally {};
 
     #these will be processed and selected..
-    print STDERR "--------result ($result)\n" if MONITOR_ALL;
+    writeDebug("--------result ($result)\n") if MONITOR_ALL;
 
     _writeCompletePage( $session, $result, 'view', $responseContentType );
 }
@@ -730,10 +731,10 @@ sub getResourceURI {
 
     #ASSERT($meta->isa('Foswiki::Meta')) if DEBUG;
 
-    print STDERR "getResourceURI - getScriptUrl("
+    writeDebug("getResourceURI - getScriptUrl("
       . $meta->web . ", "
       . ( $meta->topic || '>UNDEF<' )
-      . ", 'query')\n";
+      . ", 'query')\n");
 
     #TODO: er, and what about attchments?
     #TODO: and allow mimetype to be added later
@@ -743,7 +744,7 @@ sub getResourceURI {
       Foswiki::Func::getScriptUrl( $web, $topic, 'query' ) . "/$elementAlias";
     $uri =~ s/\/ZZyZZyyyayyayyaSven//
       ;    #it seems that getScriptUrl doesn't like $topic=undef
-    print STDERR "   getResourceURI -> $uri\n" if MONITOR_ALL;
+    writeDebug("   getResourceURI -> $uri\n") if MONITOR_ALL;
     return $uri;
 }
 
@@ -761,8 +762,7 @@ sub _writeCompletePage {
     my $cachedPage;
     $session->generateHTTPHeaders( $pageType, $responseContentType, $text,
         $cachedPage );
-    print STDERR $session->{response}->printHeaders()
-      ;    #these are not printed for cmdline..
+    writeDebug($session->{response}->printHeaders());    #these are not printed for cmdline..
     $session->{response}->print($text);
 }
 
@@ -876,6 +876,15 @@ sub mergeFrom {
         $result = Foswiki::Func::renderText( $result, $web, $topic );
         return $result;
     }
+}
+
+sub writeDebug {
+	my ( $message ) = @_;
+
+	Foswiki::Func::writeDebug( $message );
+	#print STDERR $message;
+
+	return;
 }
 
 1;
