@@ -1,4 +1,4 @@
 # Dependencies for RestPlugin
 # Example:
 REST::Utils,>=0.4,cpan,Required.
-
+JSON,>=2,cpan,Required.
