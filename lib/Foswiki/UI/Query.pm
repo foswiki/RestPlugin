@@ -382,6 +382,8 @@ writeDebug("$err\n");
                     writeDebug(
 "~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n")
                       if MONITOR_ALL;
+                    ($Foswiki::cfg{Store}{QueryAlgorithm} eq 'Foswiki::Store::QueryAlgorithms::MongoDB')
+                        || die "Check Foswiki::Store::QueryAlgorithm: For now, only MongoDB knows how to resolve a 'hash' element";
                     my $node = $evalParser->parse($querytxt);
 
                     $result = $node->evaluate(
