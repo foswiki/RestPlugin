@@ -1,11 +1,17 @@
 %META:TOPICINFO{author="BaseUserMapping_333" date="1196240328" format="1.1" version="1"}%
 
 ---+ Test %SYSTEMWEB%.RestPlugin
+This topic contains an example of a %SYSTEMWEB%.RestPlugin =GET= and =PATCH= of a Topic's =_text= using json
+
+Note that _every_ query request response will contain a new validation nonce that can then be used to POST/PATCH/DELETE/PUT
+
 %JQREQUIRE{"Form"}%
 
 <script>
 // prepare the form when the DOM is ready 
 $(document).ready(function() { 
+    console.log('jquery version: '+jQuery().jquery);
+
     //the GET submit
     $('#queryTestForm').submit(function() {
     
@@ -40,12 +46,17 @@ $(document).ready(function() {
         var element = $('input:radio[name=element]:checked').val();
         var encoding = $('input:radio[name=encoding]:checked').val();
     
-        var newtext = $('#queryTestForm_SUBMIT').topicData;
+        var newtext = $('#query_output').val();
+        
+        //console.log('newtext: '+newtext);
 
         //clear the textarea
         $('#query_output').text('SUBMITTING');
         //$(this).ajaxSubmit(request_it); 
         
+        //need to work out what the jQuery.ajax equivalent of
+        //curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "curl is it"}' http://x61/f/bin/query/Sandbox/TestTopic0/topic.json
+
         
         jQuery.ajax({
                     contentType: 'text/json', 
@@ -91,7 +102,7 @@ function showResponseForm(responseText, statusText, data1, data2)  {
     if ((typeof responseText) == 'string') {
         $('#query_output').text(responseText);
     } else {
-        $('#query_output').text(responseText._raw_text);
+        $('#query_output').text(responseText._text);
     }
 
     if (xhr != null) {
@@ -133,21 +144,21 @@ http://x61/f/bin/query/Sandbox/TestRestPlugin/topic.json
 <input type="text" id="query" name="query" value="Sandbox/TestTopic0" />
 %BR%
 Element:
-<input type="radio" name="element" value="topic" id="topic" checked/><label for="topic">.topic</label>
-<input type="radio" name="element" value="web" id="web" /><label for="web">.web</label>
-<input type="radio" name="element" value="attachment" id="attachment" /><label for="attachment">.attachment</label>%BR%
+<input type="radio" name="element" value="topic" id="topic" checked/><label for="topic">topic</label>
+<input type="radio" name="element" value="web" id="web" disabled /><label for="web">web</label>
+<input type="radio" name="element" value="attachment" id="attachment"disabled  /><label for="attachment">attachment</label>%BR%
 Encoding:
 <input type="radio" name="encoding" value="json" id="json" checked/><label for="json">.json</label>
 <input type="radio" name="encoding" value="html" id="html" disabled/><label for="html">.html</label>
 <input type="radio" name="encoding" value="perl" id="perl" /><label for="perl">.perl</label>
 <input type="radio" name="encoding" value="text" id="text" /><label for="text">.text</label>
 %BR%
-<input type="submit" >
+<input type="submit" value="GET topic text">
 </form>
 
 <form id="queryTestForm_SUBMIT" type="POST">
 <textarea id="query_output" cols="80" rows="10"></textarea>
 <input type="text" id="query_nonce" name="query" size="80" />
-<input type="submit" >
+<input type="submit" value="PATCH topic text">
 </form>
 
