@@ -17,7 +17,8 @@ This plugin begins the task of creating a CRUD style REST URI engine for Foswiki
 It uses a Foswiki:Development.TopicObjectModel addressing scheme based on the System.IfStatements and System.QuerySearch syntax, 
 and then enable both the retriving and setting / creation of topics and parts of topics.
 
-Initially supporting JSON encoding, it can be extended to anything - so long as symetrical serialisation/deserialisation are implemented using the (post foswiki 1.1) =Foswiki::Serialise= class.
+Initially supporting JSON encoding, it can be extended to anything - so long as symetrical 
+serialisation/deserialisation are implemented using the (post foswiki 1.1) =Foswiki::Serialise= class.
 
 ---+++ Authentication
 At this point 2 Login managers have been tested, Apache auth based, and !TemplateLogin.

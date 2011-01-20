@@ -12,6 +12,7 @@ pub/System/RestPlugin/Edit-chalk-10g.png
 pub/System/RestPlugin/formfield_example.png  
 pub/System/RestPlugin/Image-Edit-chalk-10bo.png  
 pub/System/RestPlugin/Wiki-text-icon.png
+pub/System/RestPlugin/json2.js
 
 #demo topic
 data/Sandbox/TestRestPlugin.txt

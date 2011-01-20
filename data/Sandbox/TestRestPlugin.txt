@@ -6,6 +6,7 @@ This topic contains an example of a %SYSTEMWEB%.RestPlugin =GET= and =PATCH= of 
 Note that _every_ query request response will contain a new validation nonce that can then be used to POST/PATCH/DELETE/PUT
 
 %JQREQUIRE{"Form"}%
+%ADDTOZONE{"script" text="<script type='text/javascript' href='%PUBURL%/%SYSTEMWEB%/RestPlugin/json2.js'></script>" id="json2.js"}%
 
 <script>
 // prepare the form when the DOM is ready 
@@ -48,7 +49,7 @@ $(document).ready(function() {
     
         var newtext = $('#query_output').val();
         
-        //console.log('newtext: '+newtext);
+        console.log('newtext: '+newtext);
 
         //clear the textarea
         $('#query_output').text('SUBMITTING');
@@ -60,8 +61,10 @@ $(document).ready(function() {
         
         jQuery.ajax({
                     contentType: 'text/json', 
-                    data: '{"_text": "'+newtext+'"}', 
-                    processData:    false,
+                    data: JSON.stringify({_text: newtext}), 
+                    //data: {_text: newtext, tickle: 'one more time'}, 
+                    //data: '{"_text": "'+newtext+'"}', 
+                    //processData:    false,
                     type: 'PATCH', 
                     url: 'http://x61/f/bin/query/'+query+'/'+element+'.'+encoding, 
                     success:        showResponse,  // post-submit callback 
