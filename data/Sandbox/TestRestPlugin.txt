@@ -49,7 +49,7 @@ $(document).ready(function() {
     
         var newtext = $('#query_output').val();
         
-        console.log('newtext: '+newtext);
+        //console.log('newtext: '+newtext);
 
         //clear the textarea
         $('#query_output').text('SUBMITTING');
@@ -61,7 +61,11 @@ $(document).ready(function() {
         
         jQuery.ajax({
                     contentType: 'text/json', 
-                    data: JSON.stringify({_text: newtext}), 
+                    data: JSON.stringify({
+                                _text: newtext, 
+                                FORM: [{name: 'BugItemTemplate'}], 
+                                FIELD : [{name:'Summary', value:'I wanted to go for a walk'}]
+                      }), 
                     //data: {_text: newtext, tickle: 'one more time'}, 
                     //data: '{"_text": "'+newtext+'"}', 
                     //processData:    false,
