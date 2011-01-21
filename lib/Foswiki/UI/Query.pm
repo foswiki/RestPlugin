@@ -182,18 +182,18 @@ sub query {
             $baseObjectExists =
               ( ( $web eq '' ) or Foswiki::Func::webExists($web) );
 
-            #$elementAlias = 'hash';    # if ( $elementAlias eq 'webs' );
+            #$elementAlias = ':topic_meta:';    # if ( $elementAlias eq 'webs' );
             $query = "'$web'/$elementAlias";
         }
         elsif ( $elementAlias eq 'topic' ) {
 
-#I created a quick hack in the QueryAlgo::getField so that element 'hash' returned the meta object
-#need to map topic==hash
+#I created a quick hack in the QueryAlgo::getField so that element ':topic_meta:' returned the meta object
+#need to map topic==:topic_meta:
             my $webExists = Foswiki::Func::webExists($web);
             my $topicExists = Foswiki::Func::topicExists( $web, $topic );
             $baseObjectExists = ( $webExists and $topicExists );
 
-            #$elementAlias = 'hash';# if ( $elementAlias eq 'topic' );
+            #$elementAlias = ':topic_meta:';# if ( $elementAlias eq 'topic' );
             $query = "'$web.$topic'/$elementAlias";
 
             if (   ( ( $web eq '' ) and defined($topic) )
@@ -378,12 +378,12 @@ writeDebug("$err\n");
                 else {
                     my $evalParser = new Foswiki::Query::Parser();
                     my $querytxt   = $query;
-                    $querytxt =~ s/(topic)$/hash/;
+                    $querytxt =~ s/(topic)$/:topic_meta:/;
                     writeDebug(
 "~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n")
                       if MONITOR_ALL;
-                    ($Foswiki::cfg{Store}{QueryAlgorithm} eq 'Foswiki::Store::QueryAlgorithms::MongoDB')
-                        || die "Check Foswiki::Store::QueryAlgorithm: For now, only MongoDB knows how to resolve a 'hash' element";
+#                    ($Foswiki::cfg{Store}{QueryAlgorithm} eq 'Foswiki::Store::QueryAlgorithms::MongoDB')
+#                        || die "Check Foswiki::Store::QueryAlgorithm: For now, only MongoDB knows how to resolve a ':topic_meta:' element";
                     my $node = $evalParser->parse($querytxt);
 
                     $result = $node->evaluate(
@@ -466,7 +466,7 @@ writeDebug("$err\n");
                 #COPY&PASTE from GET...
                 my $evalParser = new Foswiki::Query::Parser();
                 my $querytxt   = $query;
-                $querytxt =~ s/(topic)$/hash/;
+                $querytxt =~ s/(topic)$/:topic_meta:/;
                 writeDebug(
 "~~~~~~~~~~~~~~~~~~~~~~~topic: use query evaluate $querytxt\n");
                 my $node = $evalParser->parse($querytxt);
