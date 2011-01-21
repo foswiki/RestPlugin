@@ -51,7 +51,7 @@ foswiki.RestPlugin = {
     put: function(query, dataObj, options) {
         foswiki.RestPlugin.send(query, 'PUT', dataObj, options)
     },
-    delete: function(query, dataObj, options) {
+    send_delete: function(query, dataObj, options) {
         foswiki.RestPlugin.send(query, 'DELETE', dataObj, options)
     },
     //options == hash of {element, encoding, success_callback, failure_callback}
