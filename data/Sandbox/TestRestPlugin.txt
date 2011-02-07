@@ -47,7 +47,7 @@ $(document).ready(function() {
         //clear the textarea
         $('#query_output').text('SUBMITTING');
         
-        //this is equivalent to:
+        //this is equivalent to (but with valid strikeone validation):
         //curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "curl is it"}' http://x61/f/bin/query/Sandbox/TestTopic0/topic.json
 
         foswiki.RestPlugin.patch(query, {

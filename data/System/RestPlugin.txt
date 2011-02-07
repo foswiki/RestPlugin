@@ -32,24 +32,24 @@ when using =curl=,
    4 =PUT=
    5 more serialisations - including www-form..
    6 make =OPTIONS= response contextural
----+++ Resources
+---+++ Resource types (/web,/topic,/attachment)
 ---++++ Web
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
-| =GET=    |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=      |  get web resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
-| =POST=   |     yes       | =http://x61/bin/query/[{Webname}/]webs[.json]=      |  create a new web in the uri's container web - parameters in payload as for the manage=createWeb     |
+| =GET=    |     yes       | =http://x61/bin/query[/{Webname}]/webs[.json]=      |  get web resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
+| =POST=   |     yes       | =http://x61/bin/query[/{Webname}]/webs[.json]=      |  create a new web in the uri's container web - parameters in payload as for the manage=createWeb     |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  update a web resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
 | =PATCH=  |     no        | =http://x61/bin/query/{Webname}/webs[.json]=        |  same as PUT?     |
 | =DELETE= |     yes       | =http://x61/bin/query/{Webname}/webs[.json]=        |  delete web     |
 ---++++ Topic
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
-| =GET=    |     yes       | =http://x61/bin/query/{Webname}/[{TopicName/}]topic[.json]=      |  get topic's meta (if no TopicName is specified, list of all topics in a web. (array of names only?))    |
+| =GET=    |     yes       | =http://x61/bin/query/{Webname}[/{TopicName}]/topic[.json]=      |  get topic's meta (if no TopicName is specified, array of all topic names in a web.)    |
 | =POST=   |     yes       | =http://x61/bin/query/{Webname}/topic[.json]=                    |  (TODO: might rejig to use UI::Manage::_create) create a new topic in the web container using the payload as topic data, and respecting AUTOINC name requests |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update/create a topic resource completely with the payload - anything missing from the sent structure will be removed in the new revision, will not respect AUTOINC, and will use the topic name in the URI, not the payload. |
 | =PATCH=  |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  update a topic using only a partial data - leaving unsent fields the same as n-1    |
 | =DELETE= |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/topic[.json]=        |  delete topic     |
 ---++++ Attachments
 | *Verb*   | *Implemented* | *URI*                                               | *Use* |
-| =GET=    |     yes       | =http://x61/bin/query/{Webname}/{TopicName}/[{attachmentname}/]attachments[.json]=      |  get attachment resource information, currently a list of subwebs to the resource (if no Webname is specified, list all webs)    |
+| =GET=    |     yes       | =http://x61/bin/query/{Webname}/{TopicName}[/{attachmentname}]/attachments[.json]=      |  get attachment resource information, currently a list of subwebs to the resource    |
 | =POST=   |     no        | =http://x61/bin/query/{Webname}/{TopicName}/attachments[.json]=                         |  create a new attachment - can I just decode the payload and push to UI::Upload?     |
 | =PUT=    |     no        | =http://x61/bin/query/{Webname}/{TopicName}/{attachmentname}/attachments[.json]=        |  update a attachment resource (=nop= until define some web specific info, like permissions, settings etc), or maybe for renaming a web?)     |
 | =PATCH=  |     yes       | =http://x61/bin/query/{Webname}/{TopicName}[/{attachmentname}]/attachments[.json]=      | update the entire attachment meta array (if the attachment is not specified), if the attachment name is specified, update only the sent data elements for that attachment    |
@@ -66,14 +66,63 @@ or and added Header element - =X-HTTP-METHOD-OVERRIDE=. Note that these must be 
 ---++++ OPTIONS
 will give simple docco about what requests are supported
 ---++++ GET
+retreives a resource, or an array of resource names
 ---++++ PUT
+not implemented yet
 ---++++ POST
 Creates a new element in a container. So if you want to create a new topic, the URI is that of the web you want to place it, and the payload will contain a value that has a =_topic=
 ---++++ PATCH
 modifies an existing item, changing only the elements sent in the payload - thus allowing you to modify just the topic text, the value of one 'named' FIELD, or one Attachement's data.
 ---++++ DELETE
-
+delete the specified resource
 ---+++ Examples:
+---++++ Using the built in =foswiki.RestPlugin= javascript helper
+<verbatim class="tml">
+%ADDTOZONE{"script" text="<script type='text/javascript' src='%PUBURLPATH%/%SYSTEMWEB%/RestPlugin/json2.js'></script>" id="json2.js"}%
+%ADDTOZONE{"script" 
+    text="<script type='text/javascript' src='%PUBURLPATH%/%SYSTEMWEB%/RestPlugin/foswikiRestPlugin.js'></script>" id="foswikiRestPlugin.js" 
+    requires="json2.js, JavascriptFiles/foswikiPref, JavascriptFiles/strikeone"
+}%
+var query = 'Sandbox/TestTopic0';
+var element = 'topic';
+var encoding = 'json';
+        foswiki.RestPlugin.get(query, {element:element, encoding:encoding, success_callback:showResponse});
+	//you need at least one 'get' query to ensure you have a valid strikeone nonce loaded before you can use it to do a change operation
+        foswiki.RestPlugin.patch(query, {
+                                _text: newtext, 
+                                FORM: [{name: 'BugItemTemplate'}], 
+                                FIELD : [{name:'Summary', value:'oh. i have to fill it in?'}]
+                      }, 
+                      {
+                            element:element, 
+                            encoding:encoding, 
+                            success_callback:showResponse
+                      });
+// post-success callback 
+function showResponse(responseText, statusText, xhr)  { 
+    var text = '';
+    if ((typeof responseText) == 'string') {
+        text = responseText;
+    } else {
+        text = responseText._text;
+    }
+
+    var nonce = '';
+    //show the nonce changes for debugging
+    if ((typeof(foswiki.RestPlugin.nonce) == 'undefined') || (foswiki.RestPlugin.nonce == '')) {
+        nonce = 'nonce not found';
+    } else {
+        nonce = foswiki.RestPlugin.nonce;
+    }
+    alert('nonce = '+nonce + ' text = ' + text);
+}
+</verbatim>
+---++++ using =curl= to get topic data.
+<verbatim>
+curl -X GET -H "Content-Type:text/json" http://x61/f/bin/query/Sandbox/TestTopic0/topic.json
+</verbatim>
+<div style="display:none;">
+BROKEN when strikeone is on
 ---++++ using =curl= to update topic data.
 __now that the strikeone support is added, these example only work with Validation=none__ fix to come
 =curl -X PATCH -H "Content-Type:text/json" -d '{"_text": "set the topic text to something"}' http://x61/f/bin/query/Main/SvenDowideit/topic.json= can be used to send a JSON payload 
@@ -84,12 +133,16 @@ and if need to pipe data from another commandline app:
 echo '{phone: 123.456.7890}' |\
 curl -X PATCH -H "Content-Type:text/json" -d @- 'http://x61/f/bin/query/Main/SvenDowideit/topic.json'
 </verbatim>
-
+</div>
 ---++ Installation Instructions
 
 %$INSTALL_INSTRUCTIONS%
 
 ---++ Plugin Info
+
+Many thanks to the following sponsors for supporting this work:
+   * [[http://www.taxonomy.org.au][TRIN]], The Taxonomy Research & Information Network with the [[http://www.anbg.gov.au/cpbr/][Centre for Australian National Biodiversity Research]]
+
 
 
 |  Plugin Author(s): | Foswiki:Main.SvenDowideit - http://fosiki.com a %PUBURL%/%WEB%/%TOPIC%/wikiringlogo20x20.png [[http://WikiRing.com][WikiRing]] founding partner  |
