@@ -27,16 +27,16 @@ use REST::Utils qw( :all );
 use Error qw( :try );
 
 # Set to 1 for debug
-use constant MONITOR_ALL => 1;
+use constant MONITOR_ALL => 0;
 
 #map MIME type to serialiseFunctions
 our %serialiseFunctions = (
-    'text/json' => 'Foswiki::Serialise::json',
-    'application/json' => 'Foswiki::Serialise::json',
-    'text/perl' => 'Foswiki::Serialise::perl',
+    'text/json' => 'json',
+    'application/json' => 'json',
+    'text/perl' => 'perl',
 
     #'text/html' => 'Foswiki::Serialise::html',
-    'text/plain' => 'Foswiki::Serialise::raw',
+    'text/plain' => 'raw',
 
     #'application/x-www-form-urlencoded' => ''
 );
@@ -68,6 +68,7 @@ sub workoutSerialisation {
     my $prefered = REST::Utils::media_type( $query, \@supportedContentTypes );
     $prefered = 'text/json'
       if ( not defined($prefered) or ( $prefered eq '' ) );
+      
     ASSERT($prefered) if DEBUG;
     return $prefered;
 }
@@ -142,7 +143,7 @@ sub query {
     #a URL specified mediatype will over-ride the request header one..
     my $responseContentType = workoutSerialisation( $req, $url_mediatype );
     writeDebug(
-      "---- responseContentType: $responseContentType (was ".($url_mediatype||'undef').")\n");
+      "---- responseContentType: $responseContentType (was ".($url_mediatype||'undef').")\n") if MONITOR_ALL;
 
     #validate alias
     #TODO: there appear to me other 'aliases' defined in QueryAlgo::getField..

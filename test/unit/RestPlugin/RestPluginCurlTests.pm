@@ -10,7 +10,7 @@ use Foswiki::Serialise ();
 use JSON               ();
 use File::Path qw(mkpath);
 
-use constant MONITOR => 1;
+use constant MONITOR => 0;
 
 sub new {
     my $self = shift()->SUPER::new(@_);

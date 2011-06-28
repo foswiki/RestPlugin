@@ -99,9 +99,10 @@ sub testGET_topic {
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/Main/WebHome/topic.json', 'GET', {} );
 
-        #print STDERR $replytext;
+#        print STDERR "\n--- $replytext\n";
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         my ( $meta, $text ) = Foswiki::Func::readTopic( 'Main', 'WebHome' );
+
         $this->assert_deep_equals( $fromJSON,
             Foswiki::Serialise::convertMeta($meta) );
 
@@ -241,10 +242,18 @@ sub testPATCH_CompleteTopic {
     {
         my ( $meta, $text ) =
           Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+          
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
+            
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
+
+        $this->assert_equals( $NEWfromJSON->{_text}, $text );
+        $this->assert_str_equals( $NEWfromJSON->{_raw_text},
+            $meta->getEmbeddedStoreForm() );
+
+        
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
