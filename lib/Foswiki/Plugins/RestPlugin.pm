@@ -34,14 +34,14 @@ sub initPlugin {
         function => 'query',
         context  => { query => 1 },
     };
-    
 
-            # Add the JS module to the page. Note that this is *not*
-            # incorporated into the foswikilib.js because that module
-            # is conditionally loaded under the control of the
-            # templates, and we have to be *sure* it gets loaded.
-            my $src = $Foswiki::Plugins::SESSION->{prefs}->getPreference('FWSRC') || '';
-            $Foswiki::Plugins::SESSION->addToZone( 'head', 'JavascriptFiles/strikeone', <<JS );
+    # Add the JS module to the page. Note that this is *not*
+    # incorporated into the foswikilib.js because that module
+    # is conditionally loaded under the control of the
+    # templates, and we have to be *sure* it gets loaded.
+    my $src = $Foswiki::Plugins::SESSION->{prefs}->getPreference('FWSRC') || '';
+    $Foswiki::Plugins::SESSION->addToZone( 'head', 'JavascriptFiles/strikeone',
+        <<JS );
 <script type="text/javascript" src="$Foswiki::cfg{PubUrlPath}/$Foswiki::cfg{SystemWebName}/JavascriptFiles/strikeone$src.js"></script>
 JS
 
