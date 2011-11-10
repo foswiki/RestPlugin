@@ -125,16 +125,16 @@ sub testGET_webs {
     my $this = shift;
     ##WEB
     {
-        my ( $meta, $text ) = Foswiki::Func::readTopic('System');
+        my $meta = Foswiki::Meta->load($this->{session}, $Foswiki::cfg{SystemWebName});
 
         my ( $replytext, $hdr ) =
-          $this->call_UI_query( '/' . 'System' . '/webs.json', 'GET', {} );
+          $this->call_UI_query( '/' . $Foswiki::cfg{SystemWebName} . '/webs.json', 'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
             [ Foswiki::Serialise::convertMeta($meta) ] );
     }
     {
-        my ( $meta, $text ) = Foswiki::Func::readTopic( $this->{test_web} );
+        my $meta = Foswiki::Meta->load( $this->{test_web} );
 
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
@@ -151,7 +151,7 @@ sub TODOtestGET_webs_doesnotexist {
 
     #TODO: does not exist
     {
-        my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
+        my $meta = Foswiki::Meta->load('SystemDoesNotExist');
 
         try {
             my ( $replytext, $hdr ) =
@@ -176,7 +176,8 @@ sub testGET_allwebs {
     {
 
         #get all webs..
-        my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
+        #commented out by PH. WTF?
+        #my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
 
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/webs.json', 'GET', {} );
@@ -185,7 +186,7 @@ sub testGET_allwebs {
 
         my @webs = Foswiki::Func::getListOfWebs( '', '' );
         my @results = map {
-            my ( $meta, $text ) = Foswiki::Func::readTopic($_);
+            my $meta = Foswiki::Meta->load($this->{session}, $_);
             print STDERR "::::: load($_) == " . $meta->web . "\n"
               if MONITOR_ALL;
             Foswiki::Serialise::convertMeta($meta)
