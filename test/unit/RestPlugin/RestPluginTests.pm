@@ -24,11 +24,11 @@ sub new {
 
 sub set_up {
     my $this = shift;
-    
+
     #turn off validation so we don't need to hack around with nonce
     #TODO: add nonces testing later.
     $Foswiki::cfg{Validation}{Method} = 'none';
-    
+
     $this->SUPER::set_up();
 
     my $meta =
@@ -99,7 +99,7 @@ sub testGET_topic {
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/Main/WebHome/topic.json', 'GET', {} );
 
-#        print STDERR "\n--- $replytext\n";
+        #        print STDERR "\n--- $replytext\n";
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         my ( $meta, $text ) = Foswiki::Func::readTopic( 'Main', 'WebHome' );
 
@@ -125,10 +125,12 @@ sub testGET_webs {
     my $this = shift;
     ##WEB
     {
-        my $meta = Foswiki::Meta->load($this->{session}, $Foswiki::cfg{SystemWebName});
+        my $meta =
+          Foswiki::Meta->load( $this->{session}, $Foswiki::cfg{SystemWebName} );
 
-        my ( $replytext, $hdr ) =
-          $this->call_UI_query( '/' . $Foswiki::cfg{SystemWebName} . '/webs.json', 'GET', {} );
+        my ( $replytext, $hdr ) = $this->call_UI_query(
+            '/' . $Foswiki::cfg{SystemWebName} . '/webs.json',
+            'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
             [ Foswiki::Serialise::convertMeta($meta) ] );
@@ -181,12 +183,12 @@ sub testGET_allwebs {
 
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/webs.json', 'GET', {} );
-          
+
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
         my @webs = Foswiki::Func::getListOfWebs( '', '' );
         my @results = map {
-            my $meta = Foswiki::Meta->load($this->{session}, $_);
+            my $meta = Foswiki::Meta->load( $this->{session}, $_ );
             print STDERR "::::: load($_) == " . $meta->web . "\n"
               if MONITOR_ALL;
             Foswiki::Serialise::convertMeta($meta)
@@ -243,18 +245,17 @@ sub testPATCH_CompleteTopic {
     {
         my ( $meta, $text ) =
           Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-          
+
         my ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
-            
+
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
         $this->assert_equals( $NEWfromJSON->{_text}, $text );
         $this->assert_str_equals( $NEWfromJSON->{_raw_text},
             $meta->getEmbeddedStoreForm() );
 
-        
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{value},
@@ -282,7 +283,10 @@ sub testPATCH_JustOneField_Topic {
     #modify it a little and PUT
     {
 
-print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
+        print STDERR "----- "
+          . $fromJSON->{FIELD}[0]->{name} . ": "
+          . $fromJSON->{FIELD}[0]->{value} . "\n"
+          if MONITOR_ALL;
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $partialItem->{FIELD}[0]->{value} = 'Something new, something blue';
         foreach my $key ( keys( %{$partialItem} ) ) {
@@ -308,7 +312,8 @@ print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+        print STDERR "-------reply-----\n" . $replytext . "\n------------\n"
+          if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -317,14 +322,8 @@ print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
             $NEWfromJSON->{FIELD}[0]->{value},
             'Something new, something blue'
         );
-        $this->assert_equals(
-            $NEWfromJSON->{FIELD}[0]->{name},
-            'Summary'
-        );
-        $this->assert_equals(
-            $NEWfromJSON->{FIELD}[0]->{title},
-            'Summary'
-        );
+        $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{name},  'Summary' );
+        $this->assert_equals( $NEWfromJSON->{FIELD}[0]->{title}, 'Summary' );
 
         $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
             $fromJSON->{_raw_text} );
@@ -353,14 +352,25 @@ sub testPATCH_OneArrayElementByName_Topic {
     $this->assert_deep_equals( $fromJSON,
         Foswiki::Serialise::convertMeta($meta) );
 
-    #send PATCH with only the one 
+    #send PATCH with only the one
     {
 
-print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
-        my $partialItem = {"FIELD" => [{"name"=>"Summary", "value" => 'Something new, something blue'}]};
+        print STDERR "----- "
+          . $fromJSON->{FIELD}[0]->{name} . ": "
+          . $fromJSON->{FIELD}[0]->{value} . "\n"
+          if MONITOR_ALL;
+        my $partialItem = {
+            "FIELD" => [
+                {
+                    "name"  => "Summary",
+                    "value" => 'Something new, something blue'
+                }
+            ]
+        };
         my $sendJSON = JSON::to_json($partialItem);
 
-     print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
+        print STDERR "------------\n" . $sendJSON . "\n------------\n"
+          if MONITOR_ALL;
 
         ( $replytext, $hdr ) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
@@ -377,7 +387,8 @@ print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
-print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
+        print STDERR "-------reply-----\n" . $replytext . "\n------------\n"
+          if MONITOR_ALL;
 
         my $NEWfromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $NEWfromJSON,
@@ -400,8 +411,6 @@ print STDERR "-------reply-----\n".$replytext."\n------------\n" if MONITOR_ALL;
     }
 }
 
-
-
 #modify partial item updates
 sub testPATCH_Topic_PARENT {
     my $this = shift;
@@ -421,7 +430,7 @@ sub testPATCH_Topic_PARENT {
 
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
         my $partialItem = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        $partialItem->{TOPICPARENT} = [{'name'=> 'WebHome'}];
+        $partialItem->{TOPICPARENT} = [ { 'name' => 'WebHome' } ];
         foreach my $key ( keys( %{$partialItem} ) ) {
             next if ( $key eq 'TOPICPARENT' );
             delete $partialItem->{$key};
@@ -451,7 +460,8 @@ sub testPATCH_Topic_PARENT {
         $this->assert_deep_equals( $NEWfromJSON,
             Foswiki::Serialise::convertMeta($meta) );
         $this->assert_equals(
-#            keys(%{$NEWfromJSON->{TOPICPARENT}}),
+
+            #            keys(%{$NEWfromJSON->{TOPICPARENT}}),
             $meta->getParent(),
             'WebHome'
         );
