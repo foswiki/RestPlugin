@@ -707,14 +707,17 @@ sub query {
             for ( my $i = 0 ; $i < scalar(@$result) ; $i++ ) {
 
 #writeDebug("------------------ ref(result->[$i]): " . ref($result->[$i]) . "\n" if MONITOR_ALL;
-                if ( ref( $result->[$i] ) eq 'Foswiki::Meta' ) {
+                if ( ref( $result->[$i] )
+                    && $result->[$i]->isa('Foswiki::Meta') )
+                {
                     $result->[$i] =
                       Foswiki::Serialise::convertMeta( $result->[$i] );
                 }
             }
         }
         else {
-            if ( ref($result) eq 'Foswiki::Meta' ) {
+            if ( ref($result) && $result->isa('Foswiki::Meta') ) {
+                Foswiki::Func::writeDebug("AAAAAA\n\n\n");
                 $result = Foswiki::Serialise::convertMeta($result);
             }
         }
