@@ -136,7 +136,7 @@ sub testGET_webs {
             [ Foswiki::Serialise::convertMeta($meta) ] );
     }
     {
-        my $meta = Foswiki::Meta->load( $this->{test_web} );
+        my $meta = Foswiki::Meta->load( $this->{session}, $this->{test_web} );
 
         my ( $replytext, $hdr ) =
           $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
@@ -153,7 +153,7 @@ sub TODOtestGET_webs_doesnotexist {
 
     #TODO: does not exist
     {
-        my $meta = Foswiki::Meta->load('SystemDoesNotExist');
+        my $meta = Foswiki::Meta->load($this->{session}, 'SystemDoesNotExist');
 
         try {
             my ( $replytext, $hdr ) =
