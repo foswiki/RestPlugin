@@ -29,7 +29,7 @@ sub initPlugin {
     $debug = $Foswiki::cfg{Plugins}{RestPlugin}{Debug} || 0;
 
     #tell Foswiki::UI about the new handler.
-    $Foswiki::cfg{SwitchBoard}{attach} = {
+    $Foswiki::cfg{SwitchBoard}{query} = {
         package  => 'Foswiki::UI::Query',
         function => 'query',
         context  => { query => 1 },
