@@ -1,8 +1,11 @@
 package RestPluginCurlTests;
-use FoswikiFnTestCase;
-our @ISA = qw( FoswikiFnTestCase );
 use strict;
+use warnings;
 
+use FoswikiFnTestCase();
+our @ISA = qw( FoswikiFnTestCase );
+
+use RestPluginTests();
 use Foswiki ();
 use Foswiki::Func();
 use Foswiki::Meta      ();
@@ -15,6 +18,12 @@ use constant MONITOR => 0;
 sub new {
     my $self = shift()->SUPER::new(@_);
     return $self;
+}
+
+sub skip {
+    my ($this) = @_;
+
+    return RestPluginTests::skip($this);
 }
 
 sub list_tests {
@@ -56,19 +65,19 @@ sub set_up {
             value => 'work it out yourself!'
         }
     );
-    Foswiki::Func::saveTopic(
-        $this->{test_web}, "Improvement2", $meta, "
+    Foswiki::Func::saveTopic( $this->{test_web}, "Improvement2", $meta,
+        <<'HERE');
+
 typically, a spade made with a thorny handle is functional, but not ideal.
-"
-    );
-    Foswiki::Func::saveTopic(
-        $this->{test_web}, "SomeAttachments", $meta, "
+HERE
+    Foswiki::Func::saveTopic( $this->{test_web}, "SomeAttachments", $meta,
+        <<'HERE');
+
 typically, a spade made with a thorny handle is functional, but not ideal.
    * Set ALLOWTOPICCHANGE = guest
    
-%META:FILEATTACHMENT{name=\"favicon.ico\" attachment=\"favicon.ico\" attr=\"\" comment=\"\" date=\"1227691956\" path=\"favicon.ico\" size=\"1150\" user=\"ProjectContributor\" version=\"1\"}%
-"
-    );
+%META:FILEATTACHMENT{name="favicon.ico" attachment="favicon.ico" attr="" comment="" date="1227691956" path="favicon.ico" size="1150" user="ProjectContributor" version="1"}%
+HERE
     my $webData = Foswiki::Func::getDataDir() . '/' . $this->{test_web};
     my $webPub =
         Foswiki::Func::getPubDir() . '/'
@@ -81,6 +90,8 @@ typically, a spade made with a thorny handle is functional, but not ideal.
 #TODO: implementme - tbh, we need something simple in Func to attache existat files..
 #    $this->addAttachmentsToTopic( $this->{test_web}, 'SomeAttachments',
 #        ( 'one.txt', 'two.txt', 'inc/file.txt' ) );
+
+    return;
 }
 
 sub callCurl {
@@ -182,7 +193,7 @@ sub runTest {
         $password
     );
 
-    foreach my $key ( sort keys(%$expectedHash) ) {
+    foreach my $key ( sort keys( %{$expectedHash} ) ) {
 
         #if scalar..
         $this->assert_equals( $expectedHash->{$key}, $extraHash->{$key} );
@@ -220,6 +231,7 @@ sub runTest {
         #$this->assert_deep_equals( convertMETA($meta), $replyObj );
     }
 
+    return;
 }
 
 sub test_create_web_noauth {
@@ -295,6 +307,8 @@ sub test_create_web_noauth {
         },
         undef
     );
+
+    return;
 }
 
 sub testGET_topiclist {
@@ -319,6 +333,7 @@ sub testGET_topiclist {
         #TODO: test the other values we're returning
     }
 
+    return;
 }
 
 sub testGET {
@@ -366,6 +381,7 @@ sub testGET {
         #TODO: test the other values we're returning
     }
 
+    return;
 }
 
 sub testPATCH {
@@ -417,6 +433,8 @@ sub testPATCH {
 #            'X-Foswiki-Rest-Query'    => '\''.$this->{test_web}.'.Improvement2\'/topic',
         }
     );
+
+    return;
 }
 
 sub test_attachmentsProjectLogos {
@@ -439,6 +457,8 @@ sub test_attachmentsProjectLogos {
         },
 '[{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-badge.png","version":"2","date":"1227691956","name":"foswiki-badge.gif","path":"foswiki-badge.png","attr":"","size":"4807","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.gif","version":"2","date":"1227691994","name":"foswiki-logo.gif","path":"foswiki-logo.gif","attr":"","size":"7537","comment":"","user":"ProjectContributor"},{"attachment":"foswiki-logo.xcf","version":"1","date":"1227691956","name":"foswiki-logo.xcf","path":"foswiki-logo.xcf","attr":"","size":"45514","user":"ProjectContributor"}]'
     );
+
+    return;
 }
 
 sub test_attachmentsProjectLogos_favicon_ico {
@@ -481,6 +501,8 @@ sub test_attachmentsProjectLogos_favicon_ico {
         },
         undef    #its an error, not a payload
     );
+
+    return;
 }
 
 sub test_attachmentsWebHome {
@@ -502,6 +524,8 @@ sub test_attachmentsWebHome {
         },
         ''
     );
+
+    return;
 }
 
 sub test_attachment_modify {
@@ -581,6 +605,8 @@ sub test_attachment_modify {
         },
 '{"attachment":"favicon.ico","version":"1","date":"1227691956","name":"favicon.ico","path":"favicon.ico","attr":"","size":"1150","comment":"Set a comment","user":"ProjectContributor"}',
     );
+
+    return;
 }
 
 sub test_multiple_attachment_modify {
@@ -714,6 +740,8 @@ sub test_multiple_attachment_modify {
         },
 '{"attachment":"image.png","version":"1","date":"EXTRACTED_FOR_TESTING","name":"image.png","path":"image.png","attr":"","size":"1150","comment":"original comment","user":"ProjectContributor"}',
     );
+
+    return;
 }
 
 1;

@@ -1,7 +1,8 @@
 package RestPluginTests;
-use FoswikiFnTestCase;
-our @ISA = qw( FoswikiFnTestCase );
 use strict;
+use warnings;
+use FoswikiFnTestCase();
+our @ISA = qw( FoswikiFnTestCase );
 
 #TODO: add tests for REST:Utils HTTP method tunneling and mimetypes..
 
@@ -10,16 +11,34 @@ use Foswiki::Func();
 use Foswiki::Meta      ();
 use Foswiki::Serialise ();
 use JSON               ();
+use Assert;
+use Error qw(try with);
+use Scalar::Util qw(blessed);
 
 # Set to 1 for debug
 use constant MONITOR_ALL => 0;
 
 my $UI_FN;
-my $fatwilly;
 
 sub new {
     my $self = shift()->SUPER::new(@_);
+
     return $self;
+}
+
+sub skip {
+    my ( $this, $test ) = @_;
+    my $reason;
+
+    if ( !$Foswiki::cfg{Plugins}{RestPlugin}{Enabled} ) {
+        $reason = 'RestPlugin is not enabled';
+    }
+    elsif ( !$Foswiki::cfg{SwitchBoard}{query}{package} ) {
+        $reason =
+          'RestPlugin\'s query script is not in the $Foswiki::cfg{SwitchBoard}';
+    }
+
+    return $reason;
 }
 
 sub set_up {
@@ -49,45 +68,78 @@ sub set_up {
             value => 'work it out yourself!'
         }
     );
-    Foswiki::Func::saveTopic(
-        $this->{test_web}, "Improvement2", $meta, "
+    Foswiki::Func::saveTopic( $this->{test_web}, "Improvement2", $meta,
+        <<"HERE");
+
 typically, a spade made with a thorny handle is functional, but not ideal.
-"
-    );
+HERE
     $UI_FN ||= $this->getUIFn('query');
+
+    return;
 }
 
 sub call_UI_query {
     my ( $this, $url, $action, $params, $cuid ) = @_;
-    my $query = new Unit::Request($params);
+    my $query = Unit::Request->new($params);
     $query->path_info($url);
     $query->method($action);
-    my $sess = $Foswiki::Plugins::SESSION;
-    $cuid = $this->{test_user_login} unless defined($cuid);
-
+    $this->createNewFoswikiSession(
+        defined $cuid ? $cuid : $this->{test_user_login}, $query );
+    my ( $responseText, $result, $stdout, $stderr ) =
+      ('Status: 500');    #errr, boom
     my $loginname = Foswiki::Func::wikiToUserName($cuid);
     print STDERR "=-=- the user running the UI: " . $loginname . "\n"
       if MONITOR_ALL;
-    $fatwilly = new Foswiki( $loginname, $query );
+    try {
+        ( $responseText, $result, $stdout, $stderr ) = $this->captureWithKey(
+            switchboard => sub {
+                no strict 'refs';
+                &{ ${UI_FN} }( $this->{session} );
+                use strict 'refs';
+                $Foswiki::engine->finalize( $this->{session}{response},
+                    $this->{session}{request} );
+            }
+        );
+    }
+    catch Foswiki::OopsException with {
+        my $e = shift;
+        $responseText =
+          ( blessed $e && $e->can('stringify') ) ? $e->stringify() : $@;
+    }
+    catch Foswiki::EngineException with {
+        my $e = shift;
+        $responseText =
+          ( blessed $e && $e->can('stringify') ) ? $e->stringify() : $@;
+    };
 
-    my ( $text, $result, $stdout, $stderr ) = $this->capture(
-        sub {
-            no strict 'refs';
-            &$UI_FN($fatwilly);
-            use strict 'refs';
-            $Foswiki::engine->finalize( $fatwilly->{response},
-                $fatwilly->{request} );
-        }
-    );
-    print STDERR "SSSSSSSS\n$stderr\nTTTTTTTTTT\n" if MONITOR_ALL;
-    print STDERR "$stdout\nUUUUUUUUUUU\n"          if MONITOR_ALL;
+    $this->assert($responseText);
 
-    $fatwilly->finish();
-    $Foswiki::Plugins::SESSION = $sess;
+    # Remove CGI header
+    my $CRLF = "\015\012";    # "\r\n" is not portable
+    my ( $header, $body );
+    if ( $responseText =~ /^(.*?)$CRLF$CRLF(.*)$/s ) {
+        $header = $1;         # untaint is OK, it's a test
+        $body   = $2;
+    }
+    else {
+        $header = '';
+        $body   = $responseText;
+    }
 
-    $text =~ s/\r//g;
-    $text =~ s/(^.*?\n\n+)//s;    # remove CGI header
-    return ( $text, $1 );
+    my $status = 666;
+    if ( $header =~ /Status: (\d*)./ ) {
+        $status = $1;
+    }
+
+    $this->assert_num_not_equals( 500, $status, <<"HERE");
+Exception thrown, header:
+$header
+Exception thrown, body:
+$body
+HERE
+
+    #return ( $status, $header, $body, $stdout, $stderr );
+    return ( $body, $header );
 }
 
 sub testGET_topic {
@@ -96,12 +148,12 @@ sub testGET_topic {
     {
 
         #/Main/WebHome/topic.json
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/Main/WebHome/topic.json', 'GET', {} );
 
         #        print STDERR "\n--- $replytext\n";
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
-        my ( $meta, $text ) = Foswiki::Func::readTopic( 'Main', 'WebHome' );
+        my ($meta) = Foswiki::Func::readTopic( 'Main', 'WebHome' );
 
         $this->assert_deep_equals( $fromJSON,
             Foswiki::Serialise::convertMeta($meta) );
@@ -109,16 +161,18 @@ sub testGET_topic {
         #TODO: test the other values we're returning
     }
     {
-        my ( $meta, $text ) =
+        my ($meta) =
           Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        my ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
             Foswiki::Serialise::convertMeta($meta) );
     }
+
+    return;
 }
 
 sub testGET_webs {
@@ -128,7 +182,7 @@ sub testGET_webs {
         my $meta =
           Foswiki::Meta->load( $this->{session}, $Foswiki::cfg{SystemWebName} );
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        my ($replytext) = $this->call_UI_query(
             '/' . $Foswiki::cfg{SystemWebName} . '/webs.json',
             'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -138,13 +192,15 @@ sub testGET_webs {
     {
         my $meta = Foswiki::Meta->load( $this->{session}, $this->{test_web} );
 
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/' . $this->{test_web} . '/webs.json',
             'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
         $this->assert_deep_equals( $fromJSON,
             [ Foswiki::Serialise::convertMeta($meta) ] );
     }
+
+    return;
 }
 
 #TODO: catching an exception inside a capture - gotta find out how to doit.
@@ -157,7 +213,7 @@ sub TODOtestGET_webs_doesnotexist {
           Foswiki::Meta->load( $this->{session}, 'SystemDoesNotExist' );
 
         try {
-            my ( $replytext, $hdr ) =
+            my ($replytext) =
               $this->call_UI_query( '/' . 'SystemDoesNotExist' . '/webs.json',
                 'GET', {} );
             my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -172,6 +228,8 @@ sub TODOtestGET_webs_doesnotexist {
             print STDERR "******************($result)\n" if MONITOR_ALL;
         }
     }
+
+    return;
 }
 
 sub testGET_allwebs {
@@ -180,10 +238,9 @@ sub testGET_allwebs {
 
         #get all webs..
         #commented out by PH. WTF?
-        #my ( $meta, $text ) = Foswiki::Func::readTopic('SystemDoesNotExist');
+        #my ( $meta) = Foswiki::Func::readTopic('SystemDoesNotExist');
 
-        my ( $replytext, $hdr ) =
-          $this->call_UI_query( '/webs.json', 'GET', {} );
+        my ($replytext) = $this->call_UI_query( '/webs.json', 'GET', {} );
 
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
@@ -197,6 +254,8 @@ sub testGET_allwebs {
 
         $this->assert_deep_equals( $fromJSON, \@results );
     }
+
+    return;
 }
 
 sub LATERtestGET_NoSuchTopic {
@@ -216,6 +275,8 @@ sub LATERtestGET_NoSuchTopic {
         print STDERR "REPLY: $replytext\n" if MONITOR_ALL;
 
     }
+
+    return;
 }
 
 #modify partial item updates
@@ -223,9 +284,8 @@ sub testPATCH_CompleteTopic {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -236,18 +296,20 @@ sub testPATCH_CompleteTopic {
 #print STDERR "----- ".$fromJSON->{FIELD}[0]->{name}.": ".$fromJSON->{FIELD}[0]->{value}."\n" if MONITOR_ALL;
     $fromJSON->{FIELD}[0]->{value} = 'Actually, its brilliant!';
     my $sendJSON = JSON::to_json($fromJSON);
-    ( $replytext, $hdr ) = $this->call_UI_query(
+    ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'PATCH', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
+        ( $meta, my $text ) =
           Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
 
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
@@ -265,6 +327,8 @@ sub testPATCH_CompleteTopic {
         $this->assert_str_not_equals( $NEWfromJSON->{_raw_text},
             $fromJSON->{_raw_text} );
     }
+
+    return;
 }
 
 #modify partial item updates
@@ -272,9 +336,8 @@ sub testPATCH_JustOneField_Topic {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -298,18 +361,19 @@ sub testPATCH_JustOneField_Topic {
 
      #print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
 
-        ( $replytext, $hdr ) = $this->call_UI_query(
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'PATCH', { 'POSTDATA' => $sendJSON } );
 
         #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     }
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
@@ -337,6 +401,8 @@ sub testPATCH_JustOneField_Topic {
             $NEWfromJSON->{FIELD}[1]->{value} );
         $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
+
+    return;
 }
 
 #modify partial item updates
@@ -344,9 +410,8 @@ sub testPATCH_OneArrayElementByName_Topic {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -373,18 +438,19 @@ sub testPATCH_OneArrayElementByName_Topic {
         print STDERR "------------\n" . $sendJSON . "\n------------\n"
           if MONITOR_ALL;
 
-        ( $replytext, $hdr ) = $this->call_UI_query(
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'PATCH', { 'POSTDATA' => $sendJSON } );
 
         #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     }
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
@@ -410,6 +476,8 @@ sub testPATCH_OneArrayElementByName_Topic {
             $NEWfromJSON->{FIELD}[1]->{value} );
         $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
+
+    return;
 }
 
 #modify partial item updates
@@ -417,9 +485,8 @@ sub testPATCH_Topic_PARENT {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -440,18 +507,19 @@ sub testPATCH_Topic_PARENT {
 
      #print STDERR "------------\n".$sendJSON."\n------------\n" if MONITOR_ALL;
 
-        ( $replytext, $hdr ) = $this->call_UI_query(
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'PATCH', { 'POSTDATA' => $sendJSON } );
 
         #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     }
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
@@ -478,6 +546,8 @@ sub testPATCH_Topic_PARENT {
             $NEWfromJSON->{FIELD}[1]->{value} );
         $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
+
+    return;
 }
 
 #modify partial item updates
@@ -485,9 +555,8 @@ sub testPATCH_JustText_Topic {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -509,18 +578,19 @@ sub testPATCH_JustText_Topic {
         print STDERR "----send--------\n" . $sendJSON . "\n------------\n"
           if MONITOR_ALL;
 
-        ( $replytext, $hdr ) = $this->call_UI_query(
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'PATCH', { 'POSTDATA' => $sendJSON } );
 
         #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     }
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
 
@@ -544,6 +614,8 @@ sub testPATCH_JustText_Topic {
             $NEWfromJSON->{FIELD}[1]->{value} );
         $this->assert_equals( 'Details', $NEWfromJSON->{FIELD}[1]->{name} );
     }
+
+    return;
 }
 
 #create new items
@@ -551,8 +623,7 @@ sub testPOST {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
     my ( $replytext, $hdr ) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
@@ -585,11 +656,12 @@ sub testPOST {
         $LocationInHdr
     );
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "Improvement3" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement3" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement3/topic.json',
             'GET', {} );
         print STDERR "------($replytext)\n" if MONITOR_ALL;
@@ -611,13 +683,14 @@ sub testPOST {
     $this->assert(
         Foswiki::Func::topicExists( $this->{test_web}, 'Improvement3' ) );
 
-    ( $replytext, $hdr ) = $this->call_UI_query(
+    ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement3/topic.json',
         'DELETE', {}, 'BaseUserMapping_333' );
 
     $this->assert(
         not Foswiki::Func::topicExists( $this->{test_web}, 'Improvement3' ) );
 
+    return;
 }
 
 #create new items
@@ -625,9 +698,8 @@ sub testPOST_AUTOINC001 {
     my $this = shift;
 
     #GET the topic
-    my ( $meta, $text ) =
-      Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
-    my ( $replytext, $hdr ) = $this->call_UI_query(
+    my ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "Improvement2" );
+    my ($replytext) = $this->call_UI_query(
         '/' . $this->{test_web} . '/Improvement2/topic.json',
         'GET', {} );
     print STDERR "------($replytext)\n" if MONITOR_ALL;
@@ -644,17 +716,18 @@ sub testPOST_AUTOINC001 {
     $fromJSON->{_topic} = 'TestTopicAUTOINC001';
 
     my $sendJSON = JSON::to_json($fromJSON);
-    ( $replytext, $hdr ) =
+    ($replytext) =
       $this->call_UI_query( '/' . $this->{test_web} . '/topic.json',
         'POST', { 'POSTDATA' => $sendJSON } );
 
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
 
+    $meta->finish();
+
     #then make sure it saved using GET..
     {
-        my ( $meta, $text ) =
-          Foswiki::Func::readTopic( $this->{test_web}, "TestTopic001" );
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        ($meta) = Foswiki::Func::readTopic( $this->{test_web}, "TestTopic001" );
+        ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/TestTopic001/topic.json',
             'GET', {} );
         print STDERR "------($replytext)\n" if MONITOR_ALL;
@@ -671,6 +744,8 @@ sub testPOST_AUTOINC001 {
             $fromJSON->{TOPICINFO}[0]->{date}
         );
     }
+
+    return;
 }
 
 sub test_copy_topic {
@@ -679,7 +754,7 @@ sub test_copy_topic {
 #TODO: this is a dumb blind copy, where we even copy attachment meta that is not valid for this new topic.
 
     {
-        my ( $replytext, $hdr ) = $this->call_UI_query(
+        my ($replytext) = $this->call_UI_query(
             '/' . $this->{test_web} . '/Improvement2/topic.json',
             'GET', {} );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
@@ -695,7 +770,7 @@ sub test_copy_topic {
         sleep(1);
 
         #POST to the web..
-        ( $replytext, $hdr ) =
+        ($replytext) =
           $this->call_UI_query( '/' . $this->{test_web} . '/topic.json',
             'POST', { 'POSTDATA' => $sendJSON } );
 
@@ -704,7 +779,7 @@ sub test_copy_topic {
                 $this->{test_web}, 'CopyOfimprovement2'
             )
         );
-        my ( $meta, $text ) =
+        my ($meta) =
           Foswiki::Func::readTopic( $this->{test_web}, 'CopyOfimprovement2' );
 
         #amend $fromJSON's time&author
@@ -714,6 +789,8 @@ sub test_copy_topic {
         $this->assert_deep_equals( Foswiki::Serialise::convertMeta($meta),
             JSON::from_json( $sendJSON, { allow_nonref => 1 } ) );
     }
+
+    return;
 }
 
 sub test_create_web {
@@ -746,7 +823,7 @@ sub test_create_web {
                 websummary => 'web created by query REST API'
             }
         );
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/webs.json?copy', 'POST',
             { 'POSTDATA' => $sendJSON },
             'BaseUserMapping_333' );
@@ -773,7 +850,7 @@ sub test_create_web {
                 websummary => 'subweb created by query REST API'
             }
         );
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/webs.json?copy', 'POST',
             { 'POSTDATA' => $sendJSON },
             'BaseUserMapping_333' );
@@ -800,7 +877,7 @@ sub test_create_web {
                 websummary => 'another subweb created by query REST API'
             }
         );
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/Sandbox/webs.json?copy', 'POST',
             { 'POSTDATA' => $sendJSON },
             'BaseUserMapping_333' );
@@ -813,12 +890,12 @@ sub test_create_web {
             Foswiki::Func::getPreferencesValue( 'WEBSUMMARY', $newWeb ) );
     }
     $this->deleteWebs( undef, @websToDelete );
+
+    return;
 }
 
 sub deleteWebs {
-    my $this         = shift;
-    my $cleaning     = shift;
-    my @websToDelete = @_;
+    my ( $this, $cleaning, @websToDelete ) = @_;
 
 #delete all webs we just made.. (again, needs to use the REST API so that the permissions are ok.)
     foreach my $deleteWeb (@websToDelete) {
@@ -829,7 +906,7 @@ sub deleteWebs {
 
         print STDERR "\nDELETE($deleteWeb)\n" if MONITOR_ALL;
 
-        my ( $replytext, $hdr ) =
+        my ($replytext) =
           $this->call_UI_query( '/' . $deleteWeb . '/webs.json?copy',
             'DELETE', {}, 'BaseUserMapping_333' );
         print STDERR "\n  DELETE($deleteWeb) == "
@@ -838,6 +915,8 @@ sub deleteWebs {
 
         $this->assert( not( Foswiki::Func::webExists($deleteWeb) ) );
     }
+
+    return;
 }
 
 1;
