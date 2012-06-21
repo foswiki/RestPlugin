@@ -30,7 +30,7 @@ sub skip {
     my ( $this, $test ) = @_;
     my $reason;
 
-    if ( !$Foswiki::cfg{Plugins}{RestPlugin}{Enabled} ) {
+    if ( !$this->check_plugin_enabled('RestPlugin') ) {
         $reason = 'RestPlugin is not enabled';
     }
     elsif ( !$Foswiki::cfg{SwitchBoard}{query}{package} ) {
