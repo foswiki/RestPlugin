@@ -907,7 +907,7 @@ sub mergeFrom {
     my ( $meta, $other, $type, $filter ) = @_;
 
     if ($type) {
-        return if $type =~ /^_/;
+        return if $type =~ /^_/ || $type eq 'TOPICINFO';
         foreach my $item ( @{ $other->{$type} } ) {
             if ( !$filter
                 || ( $item->{name} && $item->{name} =~ /$filter/ ) )
@@ -918,7 +918,12 @@ sub mergeFrom {
 #Merge old element with new data - that way keys that are not in the payload still get used.
                 %hash = %$old if ( defined($old) );
                 @hash{ keys(%$item) } = values(%$item);
-                $meta->putKeyed( $type, \%hash );
+                if ( $Foswiki::Meta::VALIDATE{$type}{many} ) {
+                    $meta->putKeyed( $type, \%hash );
+                }
+                else {
+                    $meta->put( $type, \%hash );
+                }
             }
         }
     }
