@@ -647,7 +647,7 @@ sub testPOST {
     #my $replyHash =  JSON::from_json( $replytext, { allow_nonref => 1 } );
     print STDERR "################### $hdr ######################\n"
       if MONITOR_ALL;
-    $hdr =~ /Location: (.*)/;
+    $hdr =~ /Location: ([^\r\n]*)/;
     my $LocationInHdr = $1;
     $this->assert_str_equals(
         Foswiki::Func::getScriptUrl( undef, undef, 'query' ) . '/'
