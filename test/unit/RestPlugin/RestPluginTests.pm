@@ -827,6 +827,7 @@ sub test_create_web {
           $this->call_UI_query( '/webs.json?copy', 'POST',
             { 'POSTDATA' => $sendJSON },
             'BaseUserMapping_333' );
+        $this->assert( $replytext !~ /EngineException/, "Failed: $replytext" );
         my $fromJSON = JSON::from_json( $replytext, { allow_nonref => 1 } );
 
         $this->assert( Foswiki::Func::webExists($newWeb) );

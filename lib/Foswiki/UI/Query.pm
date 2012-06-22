@@ -300,7 +300,8 @@ sub query {
 
     if ( not $topicObject->haveAccess($accessType) ) {
         $res->header( -type => 'text/html', -status => '401' );
-        $err = "ERROR: (401) $accessType not permitted to ($web . $topic)";
+        $err = "ERROR: (401) $accessType not permitted to ($web . "
+          . ( defined $topic ? $topic : 'UNDEF' ) . ')';
         $res->print($err);
         throw Foswiki::EngineException( 401, $err, $res );
     }
