@@ -564,8 +564,8 @@ sub query {
                 catch Foswiki::OopsException with {
                     my $e = shift;
                     die 'whatever: ' . $e->{template} . '....' . $e->stringify()
-                      if not(     $e->{template} eq 'attention'
-                              and $e->{def} eq 'created_web' );
+                      if not( $e->{template} eq 'attention'
+                        and $e->{def} eq 'created_web' );
                 }
                 catch Foswiki::AccessControlException with {
                     my $e = shift;
@@ -672,7 +672,7 @@ sub query {
                 },
                 {
                     element     => 'topic',
-                    example_uri => '' 
+                    example_uri => ''
                       . $script
                       . '/{WebName}/{TopicName}/topic',
                     meaning =>
@@ -680,7 +680,7 @@ sub query {
                 },
                 {
                     element     => 'attachments',
-                    example_uri => '' 
+                    example_uri => ''
                       . $script
                       . '/{WebName}/{TopicName}/attachments',
                     meaning =>
@@ -688,7 +688,7 @@ sub query {
                 },
                 {
                     element     => 'attachments',
-                    example_uri => '' 
+                    example_uri => ''
                       . $script
                       . '/{WebName}/{TopicName}/{attachmentname}/attachments',
                     meaning =>

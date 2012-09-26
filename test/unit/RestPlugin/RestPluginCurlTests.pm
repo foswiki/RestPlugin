@@ -186,7 +186,7 @@ sub runTest {
         $OP,
         $sendType,
         $sendPayload,
-        Foswiki::Func::getScriptUrl( undef, undef, 'query' ) 
+        Foswiki::Func::getScriptUrl( undef, undef, 'query' )
           . $query . '.'
           . $receiveType,
         $login,
